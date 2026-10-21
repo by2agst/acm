@@ -1,0 +1,49 @@
+{
+ "story": "ACM1.5",
+ "flow_ref": "ACM_FSD _v1.2.pdf section 1.5 (p.12, wins); ACM_Functional_Document_v1.0.pdf section 8 (p.9-11); HCL_CAC.pptx (images only, high-level, no function-level detail).",
+ "code_summary": "Manage Function exists end-to-end: UI in ManageFunctions/ (Function*.js) uses redux-saga to FunctionController (/acm/v1/function/*), FunctionService, the ACM_FUNCTION entity, plus audit through FunctionTransactionService. Gaps: no sort, edit is not limited to description, the AC-ADMIN restriction exists only in the UI menu, generic error modal.",
+ "note": "Baseline: code zip snapshot (git commit 90482ed from git rev-parse). FSD v1.2 wins over Functional Document v1.0. HCL_CAC.pptx is high-level images only and gives no function detail. Later decks are unknown. Field length limits (name/ID 100, description 200) exist only in the UI; backend accepts description up to 256. Delete is a hard delete cascading to role-function mappings.",
+ "recommendation": "Fix before claiming full coverage: add an AC-admin role check in FunctionController, limit update to description (or confirm with the FSD owner that URL may change), add sort, and show the backend error message in the modal.",
+ "steps": [
+  {
+   "step": "Staff signs in and reaches ACM only if they hold an ACM role",
+   "detail": "PrivateRouteACMConfig (PrivateRouteConfig.js:10-33) only lets route /acm/manage-function (RoutesConfig.js:141-146) through when the user has ACM application access in LoginUserRoleState; otherwise it redirects to \"/\". AAD / Staff Portal authentication is not visible in this repo: cannot verify from repo."
+  },
+  {
+   "step": "Only AC-ADMIN staff should manage functions",
+   "detail": "The Application Module dropdown shows \"Manage Function\" only when the user role list contains AC-admin (LayoutACM.js:49-54, constant.js:16 accessRole). But the route /acm/manage-function only checks ACM access (PrivateRouteConfig.js:21-33), and FunctionController.java:22-61 has no role check; WebSecurityConfig.java:124 and :167 use permitAll. So the AC-ADMIN restriction exists only in the UI menu, not in the API."
+  },
+  {
+   "step": "Table lists application, module, function name and ID",
+   "detail": "The dropdown dispatches getFunctionList (ACM/index.js:68) -> FunctionsSaga.js:17 POST acm/v1/function/viewFunctions -> FunctionController.java:44-51 -> FunctionService.getFunctions (FunctionService.java:97-104, findAll). The DataTable shows Application ID, Module ID, Function Name, Function ID, Action (constant.js:87-93). There is no status column; delete is a hard delete (FunctionService.java:119), so \"except deleted\" holds by itself."
+  },
+  {
+   "step": "Search, sort and export the function list",
+   "detail": "Search exists: SearchBox (FunctionTableView.js:28) -> POST viewFunctions with searchText -> FunctionService.searchFunction (FunctionService.java:144-153, containing ID or Name). Export exists: ExportToExcel (FunctionTableView.js:41-45, Functions.csv, holds the currently loaded list; CSV format, not .xlsx). Sort: no sort code found in DataTable.js or in the backend query."
+  },
+  {
+   "step": "Add New Function opens the form with all fields",
+   "detail": "The Add New Function button (FunctionTableView.js:38) -> showDataTablePage isNew (FunctionTableView.js:14-16) loads FunctionAddEdit.js:29-42 with Application and Module dropdowns, Function Name, Function ID (maxlength 100), URL (maxlength 100), Description (maxlength 200, optional). Yup validation in SechmaValidation.js:31-43 (all required except description, URL uses a regex). Note: backend FunctionCreateRequest.java accepts description up to 256 and has no @Size for name/ID, so the 200/100 limits are enforced in the UI only."
+  },
+  {
+   "step": "Submit creates the function in the database",
+   "detail": "ACM/index.js:206-226 builds the payload -> FunctionPostSaga.js:24 POST acm/v1/function/createFunction -> FunctionController.java:29-32 -> FunctionService.createFunction (FunctionService.java:64-73): rejects an existing functionId (ACMEntityAlreadyExistsException, 400), looks up the module, saves to ACM_FUNCTION (Function.java:17). Audit: FunctionTransactionService.java:37-43 stores a copy in the transaction table after create."
+  },
+  {
+   "step": "Edit should change the description only",
+   "detail": "FSD: edit allows description only. In the UI during edit, Application, Module, Function Name and Function ID are disabled (FunctionAddEdit.js:29-32), but URL can be edited through its edit button (FunctionAddEdit.js:33-40, isEditConfirm). Backend FunctionService.updateFunction (FunctionService.java:75-88) overwrites functionName, description and functionUrl without checking what changed, so the API accepts a new name and URL. Functional Document p.10 only locks Application, Module, Name and ID, so URL is editable per that deck; FSD v1.2 wins."
+  },
+  {
+   "step": "Delete asks for confirmation, then removes the function",
+   "detail": "The delete icon (DataTable.js:369-374) -> handleRemove (DataTable.js:174-183) opens the ConfirmModal DeleteContent (ConfirmModal.js:98-117). After confirmation, handleDelete (DataTable.js:185-195) -> DeleteFunctionSaga.js:19 POST deleteFunction -> FunctionService.deleteFunction (FunctionService.java:116-123). Note: this is a hard delete (removeByFunctionId) and Function.java:42 has cascade ALL + orphanRemoval to RoleFunction, so role-function mappings are removed too; before that FunctionTransactionService.java:100-113 stores a copy of the function and role-function rows in the transaction table."
+  },
+  {
+   "step": "No approval for create, update or delete",
+   "detail": "createFunction, updateFunction and deleteFunction (FunctionController.java:29-37, 53-56) write straight to ACM_FUNCTION through FunctionService with no pending status or approver step; the Function.java entity has no status column. FunctionTransactionService only records history."
+  },
+  {
+   "step": "Failures show an error pop-up",
+   "detail": "The axios interceptor (axios.configuration.js:43-47) sets apiError for 404/500 and apiError400 for 400; ContentLayout.js:11-15 shows a Modal with generic text (\"We are unable to display the requested page...\" / \"...retrieve the record...\"). The specific backend message (e.g. \"function already exists\") is not shown; the functionState.error state in FunctionsReducer.js:33-37 is read by no component. Other statuses (e.g. 401) show no modal."
+  }
+ ]
+}

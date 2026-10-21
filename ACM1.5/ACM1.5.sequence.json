@@ -1,0 +1,233 @@
+{
+ "schema_version": 1,
+ "diagram_type": "sequence",
+ "meta": {
+  "title": "ACM1.5 Manage Function",
+  "output": "ACM1.5.sequence.html",
+  "viewBox": [
+   1080,
+   620
+  ],
+  "column_fit": "spread",
+  "animation": "trace",
+  "quality_profile": "showcase",
+  "locale": "en",
+  "views": [
+   {
+    "id": "list",
+    "label": "List and search",
+    "focus": [
+     "staff",
+     "web",
+     "api",
+     "svc",
+     "db"
+    ],
+    "note": "Listing and search; no sort."
+   },
+   {
+    "id": "create",
+    "label": "Create",
+    "focus": [
+     "web",
+     "api",
+     "svc",
+     "db",
+     "audit"
+    ],
+    "note": "Create saves directly and copies to audit."
+   },
+   {
+    "id": "change",
+    "label": "Update and delete",
+    "focus": [
+     "web",
+     "api"
+    ],
+    "note": "Update accepts more than description; delete is hard."
+   }
+  ]
+ },
+ "participants": [
+  {
+   "id": "staff",
+   "type": "external",
+   "label": "Staff",
+   "sublabel": "AC-admin menu"
+  },
+  {
+   "id": "web",
+   "type": "frontend",
+   "label": "Web App",
+   "sublabel": "React ManageFunctions"
+  },
+  {
+   "id": "api",
+   "type": "backend",
+   "label": "Function API",
+   "sublabel": "FunctionController"
+  },
+  {
+   "id": "svc",
+   "type": "backend",
+   "label": "FunctionService",
+   "sublabel": "service layer"
+  },
+  {
+   "id": "db",
+   "type": "database",
+   "label": "ACM_FUNCTION",
+   "sublabel": "database"
+  },
+  {
+   "id": "audit",
+   "type": "messagebus",
+   "label": "Audit copy",
+   "sublabel": "FunctionTransaction"
+  }
+ ],
+ "segments": [
+  {
+   "from": 150,
+   "to": 290,
+   "label": "List"
+  },
+  {
+   "from": 295,
+   "to": 445,
+   "label": "Create"
+  },
+  {
+   "from": 450,
+   "to": 525,
+   "label": "Update / delete"
+  }
+ ],
+ "messages": [
+  {
+   "id": "m1",
+   "from": "staff",
+   "to": "web",
+   "y": 160,
+   "label": "open Manage Function",
+   "variant": "default"
+  },
+  {
+   "id": "m2",
+   "from": "web",
+   "to": "api",
+   "y": 192,
+   "label": "viewFunctions + searchText",
+   "variant": "emphasis"
+  },
+  {
+   "id": "m3",
+   "from": "api",
+   "to": "svc",
+   "y": 224,
+   "label": "getFunctions / searchFunction",
+   "variant": "default"
+  },
+  {
+   "id": "m4",
+   "from": "svc",
+   "to": "db",
+   "y": 256,
+   "label": "findAll / contains ID or name",
+   "variant": "default"
+  },
+  {
+   "id": "m5",
+   "from": "api",
+   "to": "web",
+   "y": 288,
+   "label": "list returned (no sort)",
+   "variant": "return"
+  },
+  {
+   "id": "m6",
+   "from": "staff",
+   "to": "web",
+   "y": 320,
+   "label": "Add New Function, Submit",
+   "variant": "default"
+  },
+  {
+   "id": "m7",
+   "from": "web",
+   "to": "api",
+   "y": 352,
+   "label": "createFunction (no role check)",
+   "variant": "security"
+  },
+  {
+   "id": "m8",
+   "from": "api",
+   "to": "svc",
+   "y": 384,
+   "label": "createFunction",
+   "variant": "default"
+  },
+  {
+   "id": "m9",
+   "from": "svc",
+   "to": "db",
+   "y": 416,
+   "label": "save if functionId is new",
+   "variant": "emphasis"
+  },
+  {
+   "id": "m10",
+   "from": "svc",
+   "to": "audit",
+   "y": 448,
+   "label": "copy row to transaction",
+   "variant": "dashed"
+  },
+  {
+   "id": "m11",
+   "from": "web",
+   "to": "api",
+   "y": 480,
+   "label": "updateFunction: name, URL, description",
+   "variant": "emphasis"
+  },
+  {
+   "id": "m12",
+   "from": "web",
+   "to": "api",
+   "y": 512,
+   "label": "deleteFunction (hard delete)",
+   "variant": "emphasis"
+  }
+ ],
+ "cards": [
+  {
+   "dot": "emerald",
+   "title": "Matches the flow",
+   "items": [
+    "List, search, CSV export, add form",
+    "Create saves directly, no approval",
+    "Delete asks for confirmation first"
+   ]
+  },
+  {
+   "dot": "rose",
+   "title": "Gap",
+   "items": [
+    "No sort on the table",
+    "Update accepts name and URL, not only description",
+    "No AC-ADMIN check in the API"
+   ]
+  },
+  {
+   "dot": "orange",
+   "title": "To verify",
+   "items": [
+    "AAD sign-in is outside this repo",
+    "Delete is hard and cascades to role mappings",
+    "Error modal text is generic"
+   ]
+  }
+ ]
+}

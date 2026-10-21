@@ -1,0 +1,198 @@
+{
+ "schema_version": 1,
+ "diagram_type": "sequence",
+ "meta": {
+  "title": "ACM1.6 Grant Role to User",
+  "output": "ACM1.6.sequence.html",
+  "viewBox": [
+   1080,
+   620
+  ],
+  "column_fit": "spread",
+  "animation": "trace",
+  "quality_profile": "showcase",
+  "locale": "en"
+ },
+ "participants": [
+  {
+   "id": "staff",
+   "type": "external",
+   "label": "Staff",
+   "sublabel": "AC-ADMIN user"
+  },
+  {
+   "id": "web",
+   "type": "frontend",
+   "label": "Web App",
+   "sublabel": "React UI"
+  },
+  {
+   "id": "api",
+   "type": "backend",
+   "label": "ACM API",
+   "sublabel": "UserRoleService"
+  },
+  {
+   "id": "db",
+   "type": "database",
+   "label": "ACM DB",
+   "sublabel": "ACM_USER_ROLE"
+  },
+  {
+   "id": "mail",
+   "type": "messagebus",
+   "label": "Email",
+   "sublabel": "supporter notice"
+  }
+ ],
+ "segments": [
+  {
+   "from": 150,
+   "to": 255,
+   "label": "List users"
+  },
+  {
+   "from": 258,
+   "to": 325,
+   "label": "Edit form"
+  },
+  {
+   "from": 328,
+   "to": 528,
+   "label": "Submit"
+  }
+ ],
+ "messages": [
+  {
+   "id": "ma",
+   "from": "staff",
+   "to": "web",
+   "y": 160,
+   "label": "open User Role Mapping",
+   "variant": "default"
+  },
+  {
+   "id": "mb",
+   "from": "web",
+   "to": "api",
+   "y": 195,
+   "label": "POST viewAllUsers",
+   "variant": "emphasis"
+  },
+  {
+   "id": "mc",
+   "from": "api",
+   "to": "db",
+   "y": 225,
+   "label": "read ACTIVE users",
+   "variant": "default"
+  },
+  {
+   "id": "md",
+   "from": "web",
+   "to": "api",
+   "y": 270,
+   "label": "viewRoleByUserId + dropdowns",
+   "variant": "default"
+  },
+  {
+   "id": "me",
+   "from": "staff",
+   "to": "web",
+   "y": 305,
+   "label": "pick roles, supporter, approver",
+   "variant": "default"
+  },
+  {
+   "id": "mf",
+   "from": "web",
+   "to": "api",
+   "y": 340,
+   "label": "POST mapUserRole",
+   "variant": "emphasis"
+  },
+  {
+   "id": "mg",
+   "from": "api",
+   "to": "db",
+   "y": 375,
+   "label": "save PENDING UserRole",
+   "variant": "emphasis"
+  },
+  {
+   "id": "mh",
+   "from": "api",
+   "to": "db",
+   "y": 410,
+   "label": "delete removed roles (no approval)",
+   "variant": "security"
+  },
+  {
+   "id": "mi",
+   "from": "api",
+   "to": "mail",
+   "y": 445,
+   "label": "email supporter",
+   "variant": "dashed"
+  },
+  {
+   "id": "mj",
+   "from": "api",
+   "to": "web",
+   "y": 480,
+   "label": "200 role request created",
+   "variant": "return"
+  },
+  {
+   "id": "mk",
+   "from": "web",
+   "to": "staff",
+   "y": 515,
+   "label": "table reloaded",
+   "variant": "return"
+  }
+ ],
+ "activations": [
+  {
+   "participant": "web",
+   "from": 155,
+   "to": 520,
+   "type": "frontend"
+  },
+  {
+   "participant": "api",
+   "from": 190,
+   "to": 485,
+   "type": "backend"
+  }
+ ],
+ "cards": [
+  {
+   "dot": "emerald",
+   "title": "Matches the flow",
+   "items": [
+    "List of ACTIVE users and edit form load",
+    "New role saved as PENDING with supporter and approver",
+    "Supporter is emailed on submit"
+   ]
+  },
+  {
+   "dot": "rose",
+   "title": "Gaps",
+   "items": [
+    "Removed roles are deleted at once, no approval",
+    "AC-ADMIN checked only in the UI menu",
+    "No per-application role limit"
+   ]
+  },
+  {
+   "dot": "orange",
+   "title": "To verify",
+   "items": [
+    "Real email delivery",
+    "Column sort on the user table",
+    "Role name AC-admin per environment"
+   ]
+  }
+ ]
+}

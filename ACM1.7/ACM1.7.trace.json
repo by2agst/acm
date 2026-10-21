@@ -1,0 +1,136 @@
+{
+ "story": "ACM1.7",
+ "code_commit": "90482ed",
+ "flow_ref": "ACM_FSD _v1.2.pdf bagian 1.7 (hal. 16) menang; ACM_Functional_Document_v1.0.pdf bagian 10 (hal. 13-14) melengkapi aturan minimal satu function dan batas aplikasi. HCL_CAC.pptx hanya level tinggi (entitas Users/Roles/Functions), tidak dipakai sebagai bukti langkah.",
+ "code_summary": "Alur UI-ke-API berjalan: RoleList (search, export CSV) -> edit -> RoleFunctionMapping (AutoSelect) -> saga POST mapRoleFunctions -> RoleFunctionService (diff add/delete, audit RoleFunctionTransaction), tanpa approval. Pembatasan AC-ADMIN, minimal satu function, dan function satu aplikasi hanya dijaga di UI; backend tidak punya cek.",
+ "note": "Baseline: kode zip snapshot commit 90482ed. Deck HCL_CAC.pptx tidak punya langkah rinci untuk story ini. Sort kolom dan role \"deleted\" dinilai dari kode (tanpa status, hard delete).",
+ "recommendation": "Tambahkan cek server-side: role AC-ADMIN pada RoleFunctionController, function.application == role.application, dan functionIds tidak kosong; hapus permitAll(\"/**\") di WebSecurityConfig di uat/prd; bungkus route RFM dengan PrivateRouteACMConfig.",
+ "steps": [
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf",
+   "slide": "p.16 (Basic Course 1)",
+   "step": "Staff login ke Staff Portal, sistem authenticate dengan AAD dan validasi access",
+   "repo": "spms_common_iz_api_app-main",
+   "code_ref": "spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/security/jwt/ACMAuthTokenFilter.java:70",
+   "fit": "Sebagian",
+   "detail": "ACMAuthTokenFilter memanggil azureJwtValidate.isValidToken (ACMAuthTokenFilter.java:70) tetapi hasil boolean-nya dibuang: token yang gagal validasi tetap diterima, email diambil dari payload (baris 72) dan authority dimuat dari role user (baris 74-77). Validasi dilewati untuk profile TEST/DEV/LOCAL/UAT (baris 68-70). Filter hanya aktif untuk 8 path di variabel flag (baris 42-49) dan path roleFunctionMapping tidak termasuk, jadi endpoint step ini tidak diautentikasi filter itu. Validasi AAD yang benar-benar menolak token ada di AuthService.java:127-133 (hanya profile prd). Login portal sendiri ada di luar repo ini, tidak bisa diverifikasi dari repo."
+  },
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf",
+   "slide": "p.16 (Trigger, BR-MA-001, Notes)",
+   "step": "Menu Role Function Mapping hanya terlihat untuk staff dengan role AC-ADMIN",
+   "repo": "spms_common_iz_web_app-main",
+   "code_ref": "spms_common_iz_web_app-main/src/Components/LayoutACM.js:51",
+   "fit": "Sebagian",
+   "detail": "Dropdown module difilter di LayoutACM.js:51 dengan roleList.includes(el.accessRole); RFM punya accessRole \"AC-admin\" (Utility/constant.js:18). Tapi route /acm/manage-role-function memakai Route biasa (Navigation/RoutesConfig.js:149-153), bukan PrivateRouteACMConfig, sehingga URL langsung tidak dicek role-nya. Pembatasan hanya di menu UI."
+  },
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf",
+   "slide": "p.16 (Basic Course 2)",
+   "step": "Sistem memuat Application Id, Role Id, Role Name dari semua role (kecuali yang deleted)",
+   "repo": "spms_common_iz_web_app-main",
+   "code_ref": "spms_common_iz_web_app-main/src/Containers/ACM/index.js:67",
+   "fit": "Sesuai",
+   "detail": "Saat moduleType RFM, getRoleList dipanggil (index.js:67) ke POST acm/v1/role/viewRoles (RoleController.java:42-49) yang mengembalikan roleRepository.findAll() (RoleService.java:97-104). Tabel RoleList menampilkan kolom Application ID, Role ID, Role Name, Action (Utility/constant.js:112-117; DataTable.js:468-490). Entity Role tidak punya kolom status dan deleteRole menghapus baris secara fisik (RoleService.java:126), jadi role deleted memang tidak muncul."
+  },
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf",
+   "slide": "p.16 (Basic Course 2)",
+   "step": "Staff dapat search Role ID dan Role Name",
+   "repo": "spms_common_iz_web_app-main",
+   "code_ref": "spms_common_iz_web_app-main/src/Containers/ACM/MapRoleFunction/RoleList.js:12",
+   "fit": "Sesuai",
+   "detail": "SearchBox memanggil getRoleList({searchText}) (RoleList.js:12-14) ke viewRoles; bila searchText tidak kosong, RoleController.java:45-46 memanggil getRolesByIdAndName yang memakai findByRoleIdContainingOrRoleNameContaining (RoleService.java:151-152), yaitu pencarian contains pada Role ID atau Role Name."
+  },
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf",
+   "slide": "p.16 (Basic Course 2)",
+   "step": "Staff dapat sort field Role ID dan Role Name",
+   "repo": "spms_common_iz_web_app-main",
+   "code_ref": "spms_common_iz_web_app-main/src/Containers/ACM/index.js:301",
+   "fit": "Sebagian",
+   "detail": "Data diurutkan tetap berdasarkan roleName lewat sortObject(roleData, \"roleName\") (index.js:301; Packages/Common.js:50). Tidak ditemukan kontrol sort yang bisa diklik staff pada header kolom di DataTable.js untuk module RMF, dan tidak ada sort Role ID."
+  },
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf",
+   "slide": "p.16 (Basic Course 2)",
+   "step": "Staff dapat export data hasil search/filter ke Excel",
+   "repo": "spms_common_iz_web_app-main",
+   "code_ref": "spms_common_iz_web_app-main/src/Containers/ACM/MapRoleFunction/RoleList.js:34",
+   "fit": "Sebagian",
+   "detail": "Tombol \"Export to Excel\" (Components/ExportToExcel.js:6-16) memakai CSVLink dari react-csv dengan roleData yang sedang tampil (hasil search) dan file bernama \"Roles.csv\" (RoleList.js:34). Hasilnya CSV, bukan file .xlsx; Excel bisa membukanya."
+  },
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf ; ACM_Functional_Document_v1.0.pdf",
+   "slide": "FSD p.16 (Basic Course 3); Functional Doc p.13 (10.1)",
+   "step": "Klik edit memuat form Map Role Function dengan function yang sudah ter-assign ke role",
+   "repo": "spms_common_iz_web_app-main",
+   "code_ref": "spms_common_iz_web_app-main/src/Components/DataTable.js:83",
+   "fit": "Sesuai",
+   "detail": "Ikon edit memanggil handleAddRoleFunctionMapping (DataTable.js:83-87): dispatch getRoleFunctionDetails ke POST viewRoleFunctionMappings (ServiceConfig.js:58; RoleFunctionController.java:35-39, RoleFunctionService.java:94-101) lalu form RoleFunctionMapping dengan judul \"Map Role Function (<roleId>)\" menampilkan function yang sudah ada sebagai existingOptions (RoleFunctionMapping.js:21,29-35,69-77)."
+  },
+  {
+   "flow_file": "ACM_Functional_Document_v1.0.pdf",
+   "slide": "p.14 (10.2, bullet 3)",
+   "step": "Hanya function milik aplikasi role tersebut yang boleh di-assign",
+   "repo": "spms_common_iz_api_app-main",
+   "code_ref": "spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/service/RoleFunctionService.java:44",
+   "fit": "Sebagian",
+   "detail": "UI hanya menawarkan function dari aplikasi role: DataTable.js:84 memanggil getFunctionListByAppId(applicationId) ke viewFunctionsByAppId (FunctionController.java:58-61; FunctionService.java:129-141). Di server, mapRoleFunctions hanya memanggil functionService.getFunction(functionId) (RoleFunctionService.java:44,78) yang cuma cek function ada; tidak ada cek bahwa function satu aplikasi dengan role, sehingga request langsung bisa memetakan function aplikasi lain."
+  },
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf ; ACM_Functional_Document_v1.0.pdf",
+   "slide": "FSD p.16 (Basic Course 3); Functional Doc p.13 (10.2)",
+   "step": "Staff dapat assign (tambah) dan unassign (hapus) function pada role",
+   "repo": "spms_common_iz_web_app-main",
+   "code_ref": "spms_common_iz_web_app-main/src/Containers/ACM/MapRoleFunction/RoleFunctionMapping.js:54",
+   "fit": "Sesuai",
+   "detail": "Komponen AutoSelect (RoleFunctionMapping.js:69-77) mengubah nilai functionIds lewat getSelectedValue/setFieldValue (baris 54-61), sehingga function bisa ditambah atau dihapus dari daftar terpilih sebelum submit."
+  },
+  {
+   "flow_file": "ACM_Functional_Document_v1.0.pdf",
+   "slide": "p.14 (10.3, bullet 4)",
+   "step": "Minimal satu function harus tetap ter-assign ke role",
+   "repo": "spms_common_iz_api_app-main",
+   "code_ref": "spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/dto/RoleFunctionMappingRequest.java:18",
+   "fit": "Sebagian",
+   "detail": "UI memvalidasi functionIds dengan Yup.array().required(\"Select atleast one function to map with role.\") (SechmaValidation.js:48; yup ^0.32.9 menolak array kosong). Di server functionIds hanya @NotNull (RoleFunctionMappingRequest.java:18-19), jadi list kosong lolos dan mapRoleFunctions menghapus semua mapping (RoleFunctionService.java:59-71). Aturan hanya dijaga di UI."
+  },
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf ; ACM_Functional_Document_v1.0.pdf",
+   "slide": "FSD p.16 (Basic Course 4); Functional Doc p.14 (10.3)",
+   "step": "Submit mengirim request ke backend; daftar function terkirim menjadi daftar lengkap function role",
+   "repo": "spms_common_iz_api_app-main",
+   "code_ref": "spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/service/RoleFunctionService.java:54",
+   "fit": "Sesuai",
+   "detail": "index.js:252-266 membentuk payload {mappedBy, roleId, functionIds} dan dispatch postRoleFunction ke POST mapRoleFunctions (Sagas/RoleFunctionMapping/RoleFunctionMappingPostSaga.js:16-24; RoleFunctionController.java:29-33). Service menghitung selisih: function lama yang tidak ada di request dihapus (baris 58-71), function baru yang belum ada ditambah (baris 73-88), dalam satu @Transactional (baris 34); jika role belum punya function, semua ditambah (baris 40-52). Hasilnya daftar request menjadi daftar lengkap role. Setiap perubahan dicatat ke RoleFunctionTransaction (RoleFunctionTransactionService.java:25-27)."
+  },
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf",
+   "slide": "p.16 (Description)",
+   "step": "Tidak ada proses approval untuk role function mapping",
+   "repo": "spms_common_iz_api_app-main",
+   "code_ref": "spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/service/RoleFunctionService.java:35",
+   "fit": "Sesuai",
+   "detail": "mapRoleFunctions langsung menyimpan dan menghapus baris ACM_ROLE_FUNCTION (RoleFunctionService.java:45,65,79) tanpa status pending atau langkah supporter/approver; berbeda dengan user-role mapping yang memakai status PENDING (index.js:236-245)."
+  },
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf",
+   "slide": "p.16 (Exceptions)",
+   "step": "Bila gagal retrieve/submit, staff melihat modal pop up dengan pesan error",
+   "repo": "spms_common_iz_web_app-main",
+   "code_ref": "spms_common_iz_web_app-main/src/Services/axios.configuration.js:43",
+   "fit": "Sebagian",
+   "detail": "Interceptor axios mengirim setApiErrorTrue untuk status 404/500 dan setApiError400 untuk 400 (axios.configuration.js:43-48), yang membuka Modal \"Something went wrong\" di ContentLayout.js:8-26 dengan pesan generik. Status lain (mis. 403 setelah retry, 401) tidak memicu modal. ContentLayout hanya membungkus route lewat PrivateRouteACMConfig (PrivateRouteConfig.js:21), sedangkan route RFM memakai Route biasa; apakah modal tampil di halaman ini tidak bisa dipastikan dari repo. Error dari saga (errorRoleFUnction) hanya disimpan di state dan tidak ditampilkan."
+  },
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf",
+   "slide": "p.16 (BR-MA-001, Notes)",
+   "step": "Server hanya mengizinkan staff AC-ADMIN memanggil mapRoleFunctions",
+   "repo": "spms_common_iz_api_app-main",
+   "code_ref": "spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/controller/RoleFunctionController.java:29",
+   "fit": "Tidak ada code",
+   "detail": "RoleFunctionController tidak punya @PreAuthorize atau cek role di mapRoleFunctions/viewRoleFunctionMappings (baris 29-39). Filter ACMAuthTokenFilter tidak mencakup path ini (baris 42-49), dan chain uat/prd menambahkan requestMatchers(\"/**\").permitAll() (WebSecurityConfig.java:167), sehingga request tanpa login tetap lolos. Konfigurasi gateway/WAF di depan API tidak bisa diverifikasi dari repo."
+  }
+ ]
+}

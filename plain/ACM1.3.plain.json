@@ -1,0 +1,71 @@
+{
+ "story": "ACM1.3",
+ "steps": [
+  {
+   "en": "Only AC-ADMIN staff can open Manage User",
+   "id": "Hanya staff AC-ADMIN yang bisa membuka Manage User",
+   "why_en": "Only the menu is restricted; nothing behind the screen checks the role.",
+   "why_id": "Hanya menu yang dibatasi; di balik layar tidak mengecek role."
+  },
+  {
+   "en": "Staff sees all active users with their details",
+   "id": "Staff melihat semua user aktif beserta detailnya",
+   "why_en": "",
+   "why_id": ""
+  },
+  {
+   "en": "Staff can search users by ID and name",
+   "id": "Staff bisa mencari user lewat ID dan nama",
+   "why_en": "Search works by ID only on this tab; name search is missing.",
+   "why_id": "Pencarian hanya lewat ID di tab ini; pencarian nama tidak ada."
+  },
+  {
+   "en": "Staff can sort the list by ID or name",
+   "id": "Staff bisa mengurutkan daftar menurut ID atau nama",
+   "why_en": "The column headers cannot be clicked to sort.",
+   "why_id": "Header kolom tidak bisa diklik untuk mengurutkan."
+  },
+  {
+   "en": "Staff can export the shown users to Excel",
+   "id": "Staff bisa mengekspor user yang tampil ke Excel",
+   "why_en": "The export is a CSV file, not a real Excel file.",
+   "why_id": "Hasil export berupa file CSV, bukan file Excel asli."
+  },
+  {
+   "en": "Staff finds a person in the staff directory to add",
+   "id": "Staff mencari orang di direktori staff untuk ditambahkan",
+   "why_en": "",
+   "why_id": ""
+  },
+  {
+   "en": "Staff picks the user type when adding a person",
+   "id": "Staff memilih tipe user saat menambah orang",
+   "why_en": "The default type is Admin and can differ from what the dropdown shows.",
+   "why_id": "Tipe bawaan adalah Admin dan bisa berbeda dari yang tampil di dropdown."
+  },
+  {
+   "en": "The person is added to the system right away",
+   "id": "Orang itu langsung ditambahkan ke sistem",
+   "why_en": "",
+   "why_id": ""
+  },
+  {
+   "en": "Staff can change only a person's mobile number",
+   "id": "Staff hanya bisa mengubah nomor mobile seseorang",
+   "why_en": "",
+   "why_id": ""
+  },
+  {
+   "en": "Staff deletes a person after confirming",
+   "id": "Staff menghapus seseorang setelah konfirmasi",
+   "why_en": "The person is only marked inactive, not removed for good.",
+   "why_id": "Orang itu hanya ditandai nonaktif, tidak dihapus permanen."
+  },
+  {
+   "en": "Staff sees an error message when something fails",
+   "id": "Staff melihat pesan error saat ada yang gagal",
+   "why_en": "Only a generic message appears, and some failures show nothing.",
+   "why_id": "Hanya pesan umum yang muncul, dan sebagian kegagalan tidak menampilkan apa-apa."
+  }
+ ]
+}

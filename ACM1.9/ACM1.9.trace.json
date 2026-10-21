@@ -1,0 +1,109 @@
+{
+ "story": "ACM1.9",
+ "code_commit": "90482ed",
+ "flow_ref": "ACM_FSD _v1.2.pdf section 1.9 p.19-20 (menang bila deck berbeda); ACM_Functional_Document_v1.0.pdf section 14 p.17-18; HCL_CAC.pptx (hanya tingkat tinggi, tidak dipakai untuk step)",
+ "code_summary": "Web: menu APA (Utility/constant.js, LayoutACM.js) -> DataTable.js -> ApproverActionSaga/ViewApproverApplicationSaga. API internal: UserRoleController -> UserRoleService.viewRequestByApproverId/approverUserRoleAction -> UserRoleRepository.findByApproverAndStatusIn / save; AOP UserRoleTransactionService mencatat audit. Email hanya pada reject (acm_admin.json).",
+ "note": "Evidence dihitung dari 11 step. Tidak ada deck yang lebih baru dari FSD v1.2 dan Functional Document v1.0. FSD v1.2 BR-AA-003 (email saat approve) bertentangan dengan Functional Document v1.0 p.18 (tidak ada email); FSD dipakai. Tidak ada kode di repo external API (spms_common_ez_api_app-main) untuk story ini. Pembatasan Intranet Staff Portal (Notes and Issues) tidak bisa dibuktikan dari repo. Label step 'Sesuai' pada request approve tetap memuat cacat remarks yang terhapus (step 4).",
+ "recommendation": "Klaim sebagian: 7 step Sesuai, 3 Sebagian, 1 Beda dari flow. Perbaiki sebelum diklaim penuh: email saat approve (BR-AA-003) atau konfirmasi client memakai Functional Document; cek role terhadap identitas login (bukan body request); jangan menimpa remarks dengan null; tampilkan pesan error spesifik.",
+ "steps": [
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf",
+   "slide": "p.19 (Trigger); p.20 (BR-AA-001)",
+   "step": "Staff login lalu pilih Approver Action di dropdown Application Module; hanya staff dengan role AC-APPROVE yang bisa mengakses",
+   "repo": "spms_common_iz_web_app-main",
+   "code_ref": "spms_common_iz_web_app-main/src/Components/LayoutACM.js:51",
+   "fit": "Sebagian",
+   "detail": "Menu Approver Action (optionValue APA, accessRole AC-approve, Utility/constant.js:21) hanya masuk dropdown bila daftar role user mengandung AC-approve (Components/LayoutACM.js:51). Tetapi gating ini hanya di UI: route /acm/approver-action (Navigation/RoutesConfig.js:171) memakai PrivateRouteACMConfig yang sama dengan route ACM lain tanpa cek role, dan endpoint backend tidak memakai annotation role (lihat step 5). Role AC-admin tidak memunculkan menu ini di UI. Login Staff Portal dan landing page tidak dibuktikan di sini (cakupan story ACM1.1)."
+  },
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf",
+   "slide": "p.19 (Basic Course, step 2)",
+   "step": "Sistem memuat semua pending application (role assignment) yang perlu di-approve dalam bentuk tabel",
+   "repo": "spms_common_iz_api_app-main",
+   "code_ref": "spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/service/UserRoleService.java:416",
+   "fit": "Sesuai",
+   "detail": "Memilih modul APA men-dispatch viewApproverApplicationList (spms_common_iz_web_app-main/src/Containers/ACM/index.js:70) lalu saga memanggil POST /acm/v1/userRoleMapping/viewRequestByApproverId (spms_common_iz_web_app-main/src/Sagas/ACMApprover/ViewApproverApplicationSaga.js:19, endpoint di Services/ServiceConfig.js:65). Controller (spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/controller/UserRoleController.java:60) memanggil UserRoleService.viewRequestByApproverId (:407), yang memakai findAllApproverUserRole (:416) dan repository findByApproverAndStatusIn(user, SUPPORTED, SIGNED_OFF) (repository/UserRoleRepository.java:36), lalu dikelompokkan per userId (mapToUserRoleActionResponse :261). Hasil dirender sebagai tabel di DataTable.js:649 via ApproverSupporterList. Hanya request yang sudah SUPPORTED (dan legacy SIGNED_OFF) yang tampil, sesuai Functional Document v1.0 p.17; request PENDING tidak tampil. Daftar difilter per approver yang ditunjuk, bukan 'semua' pending global. Kalau kosong, NotExistsException dikembalikan HTTP 200 berisi string (exception/CustomControllerAdvice.java:27) dan UI menampilkan tabel kosong (ApproverSupporterList.js:6)."
+  },
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf",
+   "slide": "p.19 (Basic Course, step 2)",
+   "step": "Kolom tabel: URAMS ID, Name, Department, Email, Mobile, Role Assigned, Remarks, Actions",
+   "repo": "spms_common_iz_web_app-main",
+   "code_ref": "spms_common_iz_web_app-main/src/Utility/constant.js:77",
+   "fit": "Sesuai",
+   "detail": "ApproverSupporterTableHeaderName (spms_common_iz_web_app-main/src/Utility/constant.js:77-86) berisi persis delapan kolom itu (Action tunggal). Sel baris untuk modul APA (Components/DataTable.js:649-690) mengisi userId, fullName, department (fallback sectionId), email, phoneNumber, daftar roleId, remarks, serta tombol Approve dan Reject."
+  },
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf",
+   "slide": "p.19 (Basic Course, step 3)",
+   "step": "Klik Approve atau Reject; request dikirim ke backend yang meng-update application di DB",
+   "repo": "spms_common_iz_api_app-main",
+   "code_ref": "spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/service/UserRoleService.java:428",
+   "fit": "Sesuai",
+   "detail": "Tombol Approve/Reject (Components/DataTable.js:678-687) memanggil handleApproveApproverRequest/handleRejectApproverRequest (:110, :95) yang mengirim status APPROVED atau REJECTED lewat approverUserAction (Sagas/ACMApprover/ApproverActionSaga.js:19-27) ke POST /acm/v1/userRoleMapping/approverUserRoleAction (controller/UserRoleController.java:66). UserRoleService.approverUserRoleAction (:428) memanggil mapApproverUserRoleAction (:472) yang menyimpan status, approvedDate, lastUpdatedBy lewat userRoleRepository.save (:486-490) untuk setiap role di roleIds. AOP UserRoleTransactionService.createApproverAction (:169) mencatat baris transaction MODIFY. Catatan cacat: UI tidak mengirim remarks, sedangkan :488 menimpa remarks dengan request.getRemarks() (null). Remarks yang diisi admin saat create sudah terhapus lebih dulu di langkah supporter (UserRoleService.java:401). Method private @Transactional dipanggil dari dalam class sendiri, jadi tidak ada transaction yang membungkus seluruh action (perlu verifikasi di runtime)."
+  },
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf",
+   "slide": "p.19 (Exceptions); p.20 (Notes and Issues, BR-AA-001)",
+   "step": "Hanya staff dengan role AC-APPROVE yang bisa melakukan aksi ini (cek di sistem)",
+   "repo": "spms_common_iz_api_app-main",
+   "code_ref": "spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/service/UserRoleService.java:444",
+   "fit": "Sebagian",
+   "detail": "validateApproverUserOrNot (:444) memeriksa user yang ditunjuk di field approvedBy dalam body request punya role AC-approve atau AC-admin (:453). Yang dicek bukan user yang sedang login: body (approvedBy, userId) berasal dari klien, dan viewRequestByApproverId juga mengambil userId dari body (:407-410). Endpoint ada di CSRF_IGNORED_PATHS (security/WebSecurityConfig.java:52-57) dan rantai security memakai permitAll untuk '/**' (WebSecurityConfig.java:124, :167) tanpa hasAuthority/PreAuthorize. Jadi ada cek role di service, tetapi tidak terikat ke identitas pemanggil, dan AC-admin ikut lolos (tidak disebut FSD). Autentikasi JWT per path tidak dibuktikan untuk endpoint ini (ACMAuthTokenFilter.java:42-50 tidak memuat approverUserRoleAction); perlu verifikasi di runtime."
+  },
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf",
+   "slide": "p.20 BR-AA-002",
+   "step": "Staff hanya boleh melakukan approve atau reject",
+   "repo": "spms_common_iz_api_app-main",
+   "code_ref": "spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/service/UserRoleService.java:463",
+   "fit": "Sesuai",
+   "detail": "validateApproverRoleStatus (:463-468) menolak status selain APPROVED atau REJECTED dengan ACMException (HTTP 500 lewat exception/CustomControllerAdvice.java:42-46). UI hanya menyediakan dua tombol (Components/DataTable.js:678-687). Tidak ada cek bahwa status saat ini SUPPORTED sebelum diubah (mapApproverUserRoleAction :472 menimpa status role di roleIds apa adanya)."
+  },
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf",
+   "slide": "p.20 BR-AA-002",
+   "step": "Saat approve, role diberikan/di-assign ke user",
+   "repo": "spms_common_iz_api_app-main",
+   "code_ref": "spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/service/UserRoleService.java:569",
+   "fit": "Sesuai",
+   "detail": "Status APPROVED disimpan di mapApproverUserRoleAction (service/UserRoleService.java:486). Role baru berlaku karena getLoginUserRole hanya mengembalikan role berstatus APPROVED (UserRoleService.java:569-570) dan query permission juga hanya APPROVED (UserRoleRepository.java:61). Filter ACMAuthTokenFilter.java:101 juga hanya memuat APPROVED, tetapi authority itu tidak dipakai untuk otorisasi (tanpa hasAuthority/PreAuthorize). Functional Document v1.0 p.18 juga menyatakan APPROVED berarti akses aktif."
+  },
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf",
+   "slide": "p.20 BR-AA-003",
+   "step": "Saat approve, email dikirim ke staff yang mengajukan application",
+   "repo": "spms_common_iz_api_app-main",
+   "code_ref": "spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/service/UserRoleService.java:434",
+   "fit": "Beda dari flow",
+   "detail": "Di approverUserRoleAction (:428-440) email hanya dikirim bila status REJECTED (:435-438); jalur APPROVED tidak memanggil acmEmailServiceHelper sama sekali. Perilaku ini cocok dengan Functional Document v1.0 p.18 ('No automatic email is sent when the Approver completes the final approval'), tetapi bertentangan dengan FSD v1.2 BR-AA-003. FSD menang bila deck berbeda, jadi dicatat Beda dari flow; perlu konfirmasi ke client mana yang berlaku."
+  },
+  {
+   "flow_file": "ACM_Functional_Document_v1.0.pdf",
+   "slide": "p.18 (14.3 Rejection)",
+   "step": "Saat reject, status menjadi REJECTED dan email dikirim ke pengaju awal",
+   "repo": "spms_common_iz_api_app-main",
+   "code_ref": "spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/service/UserRoleService.java:435",
+   "fit": "Sesuai",
+   "detail": "Pada status REJECTED, adminUserId (pembuat request, dari getOriginalCreatedBy :433/:499) di-lookup emailnya lewat validateApproverEmailID (:436) lalu acmEmailServiceHelper.sendHTMLEmail memakai template templates/email/acm/acm_admin.json (:437, isi 'Your Request for user-role assignment was rejected'). Catatan: update status sudah tersimpan (:434) sebelum email dikirim; bila email pengaju kosong/invalid, ACMException dilempar dan UI menerima HTTP 500 padahal reject sudah tersimpan. Bila adminUserId null, email dilewati diam-diam. Step ini bersumber dari Functional Document; FSD tidak menyebut email saat reject."
+  },
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf",
+   "slide": "p.19 (Basic Course, step 4)",
+   "step": "Setelah approve/reject, request hilang dari daftar Approver Action",
+   "repo": "spms_common_iz_web_app-main",
+   "code_ref": "spms_common_iz_web_app-main/src/Sagas/ACMApprover/ApproverActionSaga.js:29",
+   "fit": "Sesuai",
+   "detail": "Setelah POST sukses, saga langsung men-dispatch viewApproverApplicationList lagi (Sagas/ACMApprover/ApproverActionSaga.js:28-29), sehingga daftar di-fetch ulang tanpa reload halaman penuh. Backend hanya mengembalikan status SUPPORTED/SIGNED_OFF (service/UserRoleService.java:421), jadi item yang sudah APPROVED atau REJECTED tidak muncul lagi."
+  },
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf",
+   "slide": "p.19 (Exceptions)",
+   "step": "Bila gagal memuat atau mengirim data, staff melihat modal pop up dengan pesan error yang sesuai",
+   "repo": "spms_common_iz_web_app-main",
+   "code_ref": "spms_common_iz_web_app-main/src/Services/axios.configuration.js:43",
+   "fit": "Sebagian",
+   "detail": "Interceptor axios global men-dispatch setApiErrorTrue untuk HTTP 404/500 (Services/axios.configuration.js:43-45) dan setApiError400 untuk 400 (:46-48); ContentLayout.js:8-24 lalu menampilkan Modal 'Something went wrong' dengan teks generik. Pesan error spesifik dari server (mis. 'User is not Approver') tidak ditampilkan, dan status lain (401, 403 setelah retry) tidak memunculkan modal. Error di saga hanya disimpan di state (Reducers/ACMAppover/ACMApproverListReducer.js:45-49) dan tidak ada komponen yang membacanya. Modal ada, tetapi pesannya generik, bukan 'appropriate error message'."
+  }
+ ]
+}

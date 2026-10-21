@@ -1,0 +1,118 @@
+{
+ "story": "ACM1.6",
+ "code_commit": "90482ed",
+ "flow_ref": "FSD v1.2 bagian 1.6 (ACM_FSD _v1.2.pdf hal.14-15) menang; ACM_Functional_Document_v1.0.pdf tidak punya bagian grant role to user (hanya \"Assign Functions to the Role\" bagian 10.2, itu cerita ACM1.7); HCL_CAC.pptx hanya level tinggi",
+ "code_summary": "Alur grant role berjalan untuk penambahan role: list user ACTIVE, form Map User Role, pilih supporter/approver (dropdown membuang pengaju), simpan UserRole berstatus PENDING dan kirim email ke supporter (UserRoleController.java, UserRoleService.java, UserRoleMapping.js). Gap: pengecekan AC-ADMIN hanya di menu UI, pencabutan role langsung dihapus tanpa approval, larangan pilih diri sendiri hanya di dropdown, sort kolom tidak ditemukan, tidak ada pembatasan role per aplikasi.",
+ "note": "Baseline code: zip snapshot, no git commit (git rev-parse menunjuk ke repo induk 90482ed yang bukan snapshot repo ini). FSD v1.2 menang; Functional Document v1.0 tidak membahas grant role ke user. Nilai role \"AC-admin\" per environment tidak bisa diverifikasi dari repo. Profil dev/local/sit menjalankan permitAll untuk semua request (WebSecurityConfig.java:124), profil uat/prd juga permitAll \"/**\" (:167). Pengiriman email nyata tidak bisa diverifikasi. Approval oleh supporter/approver adalah cerita ACM1.8 dan ACM1.9, tidak diklaim di sini. Kode mati: validateAdminUserOrNot (UserRoleService.java:88) memeriksa UserType.ADMIN tapi tidak dipanggil di mana pun.",
+ "recommendation": "Klaim sebagian: 5 langkah Sesuai, 5 Sebagian, 1 Beda dari flow, 1 Tidak ada code. Perbaiki sebelum klaim penuh: tambah cek AC-ADMIN di server, jadikan pencabutan role lewat request PENDING, blok pengaju = supporter/approver di server, tambah sort kolom, batasi role per aplikasi.",
+ "steps": [
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf",
+   "slide": "p.14",
+   "step": "Staff login ke Staff Portal, sistem autentikasi AAD dan mengizinkan masuk ke ACM bila punya role ACM",
+   "repo": "spms_common_iz_web_app-main",
+   "code_ref": "spms_common_iz_web_app-main/src/Navigation/PrivateRouteConfig.js:26",
+   "fit": "Sebagian",
+   "detail": "Route guard di UI hanya mengecek ada tidaknya akses aplikasi ACM pada response role (PrivateRouteConfig.js:26-27), kalau tidak ada diredirect ke \"/\". Login/AAD Staff Portal tidak ada di repo ini. Di API, ACMAuthTokenFilter.java:42-49 hanya memvalidasi JWT untuk daftar endpoint tertentu dan endpoint mapUserRole tidak ada di daftar itu."
+  },
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf",
+   "slide": "p.14",
+   "step": "Hanya Staff dengan role AC-ADMIN yang bisa mengakses menu User Role Mapping (BR-UR-001)",
+   "repo": "spms_common_iz_web_app-main",
+   "code_ref": "spms_common_iz_web_app-main/src/Utility/constant.js:17",
+   "fit": "Sebagian",
+   "detail": "Menu \"User Role Mapping\" diberi accessRole \"AC-admin\" (Utility/constant.js:17) dan LayoutACM.js:51 hanya menampilkan modul bila user punya role itu. Ini cuma di UI. Endpoint /acm/v1/userRoleMapping/mapUserRole (UserRoleController.java:36) tidak punya cek role: WebSecurityConfig.java:167 permitAll untuk \"/**\" dan tidak ada @PreAuthorize, jadi pemanggil tanpa AC-ADMIN tetap bisa submit. Nilai role per environment tidak bisa diverifikasi dari repo."
+  },
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf",
+   "slide": "p.14",
+   "step": "Staff memilih User Role Mapping; sistem memuat tabel user ACTIVE (URAMS ID, Name, Department, Designation, Email, Mobile)",
+   "repo": "spms_common_iz_api_app-main",
+   "code_ref": "spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/service/UserService.java:123",
+   "fit": "Sesuai",
+   "detail": "Container ACM memanggil getAcmUser saat moduleType URM (Containers/ACM/index.js:69) ke viewAllUsers (UserController.java:51). Tanpa search text, UserService.getUsers (UserService.java:123-124) memakai findByStatusOrderByUserIdAsc(ACTIVE). Header tabel di UI: URAMS ID, Name, Department, Designation, Email, Mobile, Action (Utility/constant.js:103-111)."
+  },
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf",
+   "slide": "p.14",
+   "step": "Staff bisa search dan sort field URAMS ID dan Name, serta export data hasil search/filter ke Excel",
+   "repo": "spms_common_iz_web_app-main",
+   "code_ref": "spms_common_iz_web_app-main/src/Containers/ACM/MapUserRole/UsersList.js:27",
+   "fit": "Sebagian",
+   "detail": "SearchBox ada (UsersList.js:27) dan memanggil getAcmUser dengan searchValue; API mencari lewat searchUser di UserService.java:231-235 yang mencocokkan userId, fullName, designation, email, phoneNumber (lebih luas dari dua field) dan tidak memfilter status ACTIVE. Export ada lewat ExportToExcel (UsersList.js:38) dari data yang sedang tampil, dengan kolom lebih banyak dari tabel. Sort kolom URAMS ID/Name tidak ditemukan di UsersList.js maupun DataTable.js:89-94 (tidak diverifikasi sampai ke dalam komponen DataTable)."
+  },
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf",
+   "slide": "p.14",
+   "step": "Staff klik tombol edit; sistem memuat form Map User Role untuk user tersebut",
+   "repo": "spms_common_iz_web_app-main",
+   "code_ref": "spms_common_iz_web_app-main/src/Components/DataTable.js:89",
+   "fit": "Sesuai",
+   "detail": "Tombol edit (DataTable.js:515) memanggil handleAddUserRoleMapping (DataTable.js:89-94): dispatch getUserRoleDetails (POST viewRoleByUserId, UserRoleController.java:42), showDataTablePage ke form, lalu getApproverList dan getSupporterList. Container index.js:348 merender UserRoleMapping (breadcrumb \"Map User Role\", UserRoleMapping.js:53)."
+  },
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf",
+   "slide": "p.14",
+   "step": "Staff assign/unassign role lewat form dan memilih approver dan supporter dari dropdown",
+   "repo": "spms_common_iz_web_app-main",
+   "code_ref": "spms_common_iz_web_app-main/src/Containers/ACM/MapUserRole/UserRoleMapping.js:93",
+   "fit": "Sesuai",
+   "detail": "Form punya AutoSelect role (UserRoleMapping.js:93-101, role APPROVED yang sudah ada jadi opsi awal di :60-67), SelectApproverDropdown dan SelectSupporterDropdown (:133-134), serta remarks (:141). Validasi Yup mewajibkan approver dan supporter (SechmaValidation.js:51-52). Dropdown diisi dari user ber-role AC-approve dan AC-support (UserRoleService.java:518-550). Payload submit menyusun userId, roleIds, supportedBy, approvedBy, status PENDING, remarks (Containers/ACM/index.js:238-244)."
+  },
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf",
+   "slide": "p.15",
+   "step": "Staff yang meng-assign role tidak boleh memilih dirinya sendiri sebagai approver atau supporter (BR-UR-003); supporter dan approver berbeda",
+   "repo": "spms_common_iz_api_app-main",
+   "code_ref": "spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/service/UserRoleService.java:530",
+   "fit": "Sebagian",
+   "detail": "Daftar dropdown membuang user yang email-nya sama dengan login user (UserRoleService.java:530 supporter, :547 approver; userName dari token di UserRoleController.java:72-77). Supporter tidak sama dengan approver dicek di server (validateSupporterIdWithApproverId, UserRoleService.java:97-103, dipanggil :80) dan di UI (UserRoleMapping.js:135-140, index.js:245-248). Tetapi mapUserRoles tidak membandingkan pembuat request (createdBy) dengan supporter/approver, jadi larangan memilih diri sendiri hanya lewat filter dropdown, bisa dilewati dengan panggilan API langsung."
+  },
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf",
+   "slide": "p.14-15",
+   "step": "Submit: backend membuat request di DB berstatus PENDING dengan ID, ROLE_ID, USER_ID, STATUS, CREATED_*, UPDATED_*, APPROVER_ID, SUPPORTER_ID, SUPPORTED_DATE, APPROVED_DATE, REMARKS",
+   "repo": "spms_common_iz_api_app-main",
+   "code_ref": "spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/service/UserRoleService.java:77",
+   "fit": "Sesuai",
+   "detail": "saga POST ke mapUserRole (Sagas/UserRoleMapping/UserRoleMappingPostSaga.js:19-23). mapUserRoles (UserRoleService.java:77-86) memanggil validateRoleStatus yang hanya menerima PENDING (:125-130), lalu mapToUserRole menyimpan satu UserRole per role baru lewat userRoleRepository.save (:154-170 untuk user tanpa role, :189-205 untuk role baru), dengan status, supporter, approver, remarks dan createdBy/createdDate. Entity ACM_USER_ROLE punya kolom STATUS, SUPPORTER_ID, APPROVER_ID, SUPPORTED_DATE, APPROVED_DATE, REMARKS (entities/UserRole.java:46-67). Aksi tercatat ke audit lewat pointcut createUserRoles (aop/CommonJoinPointConfig.java:45)."
+  },
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf",
+   "slide": "p.14-15",
+   "step": "Un-assign role juga harus lewat request yang didukung supporter dan disetujui approver sebelum berlaku (BR-UR-002)",
+   "repo": "spms_common_iz_api_app-main",
+   "code_ref": "spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/service/UserRoleService.java:216",
+   "fit": "Beda dari flow",
+   "detail": "Di mapToUserRole, role yang dihapus dari pilihan langsung di-delete dengan userRoleRepository.delete(userRole) (UserRoleService.java:208-216) dan hanya dicatat sebagai transaksi DELETE. Tidak ada request PENDING, tidak ada langkah supporter/approver. Hanya penambahan role yang berstatus PENDING. FSD meminta assign dan unassign sama-sama lewat approval."
+  },
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf",
+   "slide": "p.15",
+   "step": "Saat submit, email dikirim ke supporter (BR-UR-004)",
+   "repo": "spms_common_iz_api_app-main",
+   "code_ref": "spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/service/UserRoleService.java:83",
+   "fit": "Sesuai",
+   "detail": "mapUserRoles memvalidasi email supporter ada dan sesuai pola (validateAndGetSupporterEmailID, UserRoleService.java:109-123, dipanggil :81) lalu acmEmailServiceHelper.sendHTMLEmail ke supporter memakai template templates/email/acm/acm_supporter.json (:83); template ada di src/main/resources. Pengiriman nyata ke mailbox tidak bisa diverifikasi dari repo."
+  },
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf",
+   "slide": "p.15",
+   "step": "Jika ada masalah saat retrieve/submit data, staff melihat modal pop-up dengan pesan error yang sesuai",
+   "repo": "spms_common_iz_web_app-main",
+   "code_ref": "spms_common_iz_web_app-main/src/Services/axios.configuration.js:35",
+   "fit": "Sebagian",
+   "detail": "Interceptor axios menyetel flag apiError untuk status 404/500 dan apiError400 untuk 400 (axios.configuration.js:35-40) dan ContentLayout.js:8-19 menampilkan modal dari flag itu. Pesannya umum, bukan pesan spesifik per kegagalan (mis. supporter sama dengan approver di server, ACMException), dan status lain seperti 401/403 tidak memunculkan modal."
+  },
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf",
+   "slide": "p.15",
+   "step": "Staff hanya boleh grant/revoke role untuk user dari aplikasi miliknya sendiri (BR-UR-005)",
+   "repo": "spms_common_iz_api_app-main",
+   "code_ref": "spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/service/UserRoleService.java:144",
+   "fit": "Tidak ada code",
+   "detail": "Tidak ada pembatasan per aplikasi. UI mengambil semua role (getRoleList dengan uramsid hardcode \"XYZ001\", UserRoleMapping.js:70; endpoint viewRoles mengembalikan roleService.getRoles() tanpa filter, RoleController.java:42-48) dan mapToUserRole (UserRoleService.java:144-217) tidak membandingkan aplikasi role dengan aplikasi staff pengaju."
+  }
+ ]
+}

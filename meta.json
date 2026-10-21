@@ -1,0 +1,61 @@
+{
+ "prelim": {},
+ "orphans": [
+  {
+   "feature": "Laporan akses modul + email peringatan inaktivitas",
+   "source": "ModuleAccessReportSchedulerService.java:48-51, ModuleAccessReportHelper, LoggedInAcmUserScheduler.java:51,161 (template email acm_module_inactivity_notification), MODULE_TRACKING_TODO.md (iz API)",
+   "story": "ACM1.2, ACM1.10",
+   "type": "Code tanpa story",
+   "verified": "Terverifikasi: kode ada. Laporan akses modul dan email peringatan 50 hari tidak ada di FSD v1.2 maupun Functional Document. Status INACTIVE_BY_SYSTEM (90 hari tidak login) disebut di Functional Document hlm.19 sebagai definisi status, tanpa langkah flow. Jadwal berbeda per profile (prd bulanan, default harian).",
+   "note": "Dilaporkan agent 1.2 dan 1.10, lalu diverifikasi reviewer independen."
+  },
+  {
+   "feature": "Audit trail terjadwal lewat email",
+   "source": "AuditTrailFileSchedulerService.java:39-53",
+   "story": "ACM1.10",
+   "type": "Code tanpa story",
+   "verified": "Terverifikasi: kode ada. Tidak disebut di FSD v1.2 maupun Functional Document. Jadwal per profile: prd bulanan (application-prd.yml:13), uat mingguan, sit/dev harian, local mati.",
+   "note": "CSV audit dikirim ke URA lewat email. FSD 1.10 hanya menyebut layar Audit Trail. Datanya dari tabel user-role dan role saja, sama seperti layarnya."
+  },
+  {
+   "feature": "Laporan Privileged Activities",
+   "source": "PrivilegedActivityReportController.java:24-28, PrivilegedActivityReportService.java:38-44, PRIVILEGED_ACTIVITIES_REPORT.md",
+   "story": "ACM1.10",
+   "type": "Code tanpa story",
+   "verified": "Terverifikasi: kode ada. Tidak ada di FSD v1.2; hanya muncul sebagai nama menu di Functional Document hlm.6 tanpa deskripsi. Layar terpisah dari Audit Trail dan membaca tabel transaction yang tidak dibaca Audit Trail. Cek AC-admin ada di server (controller baris 54-59).",
+   "note": "Kandidat untuk dilampirkan ke ACM1.10 sebagai usulan. Apakah slide HCL_CAC 'Audit any actions in ACM' merujuk ke sini tidak bisa diverifikasi."
+  },
+  {
+   "feature": "Audit log login/logout",
+   "source": "UserAccessController.java:94-105, UserAccessService.java:147,211-225",
+   "story": "ACM1.10",
+   "type": "Code tanpa story",
+   "verified": "Terverifikasi: kode ada. Mencatat LOGIN dan LOGOUT per module ke tabel audit; tidak ada di FSD maupun Functional Document; tidak ditampilkan layar Audit Trail, dipakai laporan akses modul.",
+   "note": "Endpoint /acm/v1/userAccess/logoutAuditTrail ada di allowlist ACMAuthTokenFilter."
+  },
+  {
+   "feature": "Audit row role-function dan function",
+   "source": "RoleFunctionTransactionService, FunctionTransactionService.java:37,68,100, RoleFunctionService.java:51,68,87",
+   "story": "ACM1.5, ACM1.7",
+   "type": "Code tanpa story",
+   "verified": "Terverifikasi: kode ada. Tidak ada di FSD 1.5/1.7 maupun Functional Document. Layar Audit Trail TIDAK membacanya (AuditTrailEnquiryServiceHelper.java:27-30); hanya Privileged Activities Report yang membacanya (PrivilegedActivityReportService.java:39,43).",
+   "note": "Function: create, update, dan delete dicatat; role-function: tiga pemanggilan save (baris 51, 68, 87)."
+  },
+  {
+   "feature": "Dead code validateAdminUserOrNot",
+   "source": "spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/service/UserRoleService.java:88-94",
+   "story": "ACM1.6",
+   "type": "Dead code",
+   "verified": "Terverifikasi ulang: grep di seluruh src (main+test) hanya menemukan definisinya (UserRoleService.java:88).",
+   "note": "Mengecek UserType.ADMIN di database, bukan role AC-ADMIN. Kemungkinan dipanggil lewat reflection tidak bisa dikesampingkan."
+  },
+  {
+   "feature": "Job hapus resigned staff: lock, email error, log, trigger manual",
+   "source": "SoftDeleteAcmUserScheduler.java:26,34; SoftDeleteAcmUserServiceHelper.java:38-47; SoftDeleteAcmUsersSchedulerController.java:12-24 (WebSecurityConfig.java:63)",
+   "story": "ACM1.11",
+   "type": "Code tanpa story",
+   "verified": "Terverifikasi: kode ada. Endpoint manual POST /acm/v1/scheduler/softDeleteAcmUserScheduler tidak punya autentikasi atau otorisasi di repo (controller tanpa cek, bukan path filter, CSRF dikecualikan, permitAll); gateway di depan app tidak terlihat dari repo. Kolom ROLE_ID di DELETED_ACM_USER_ROLE_LOG diisi id baris user_role (SoftDeleteAcmUserServiceHelper.java:40).",
+   "note": "Tiga trigger manual lain punya pola yang sama (WebSecurityConfig.java:60-62, UserAccessController.java:79-89)."
+  }
+ ]
+}

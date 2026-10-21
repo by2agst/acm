@@ -1,0 +1,53 @@
+{
+ "story": "ACM1.9",
+ "flow_ref": "ACM_FSD _v1.2.pdf section 1.9 p.19-20 (wins when decks disagree); ACM_Functional_Document_v1.0.pdf section 14 p.17-18; HCL_CAC.pptx (high level only, not used for steps)",
+ "code_summary": "Web: APA menu (Utility/constant.js, LayoutACM.js) -> DataTable.js -> ApproverActionSaga/ViewApproverApplicationSaga. Internal API: UserRoleController -> UserRoleService.viewRequestByApproverId/approverUserRoleAction -> UserRoleRepository.findByApproverAndStatusIn / save; AOP UserRoleTransactionService records the audit. Email only on reject (acm_admin.json).",
+ "note": "Evidence is computed over 11 steps. No decks newer than FSD v1.2 and Functional Document v1.0 were available. FSD v1.2 BR-AA-003 (email on approve) contradicts Functional Document v1.0 p.18 (no email); the FSD was used. The external API repo (spms_common_ez_api_app-main) has no code for this story. The Intranet Staff Portal restriction (Notes and Issues) cannot be verified from the repo. The Sesuai fit on the approve action (step 4) still carries the remarks-erased defect.",
+ "recommendation": "Claim partially: 7 steps Sesuai, 3 Sebagian, 1 Beda dari flow. Fix before claiming in full: email on approve (BR-AA-003) or have the client confirm the Functional Document applies; check the role against the logged-in identity (not the request body); do not overwrite remarks with null; show a specific error message.",
+ "steps": [
+  {
+   "step": "Staff logs in and selects Approver Action in the Application Module dropdown; only staff with role AC-APPROVE can access it",
+   "detail": "The Approver Action menu item (optionValue APA, accessRole AC-approve, Utility/constant.js:21) is added to the dropdown only if the user's role list contains AC-approve (Components/LayoutACM.js:51). The gating exists only in the UI: the route /acm/approver-action (Navigation/RoutesConfig.js:171) uses the same PrivateRouteACMConfig as every other ACM route with no role check, and the backend endpoints have no role annotation (see step 5). AC-admin alone does not show this menu in the UI. Staff Portal login and the landing page are not proven here (scope of story ACM1.1)."
+  },
+  {
+   "step": "System loads all pending applications (role assignment) that need approval in a table",
+   "detail": "Selecting module APA dispatches viewApproverApplicationList (spms_common_iz_web_app-main/src/Containers/ACM/index.js:70); the saga then calls POST /acm/v1/userRoleMapping/viewRequestByApproverId (spms_common_iz_web_app-main/src/Sagas/ACMApprover/ViewApproverApplicationSaga.js:19, endpoint in Services/ServiceConfig.js:65). The controller (spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/controller/UserRoleController.java:60) calls UserRoleService.viewRequestByApproverId (:407), which uses findAllApproverUserRole (:416) and the repository method findByApproverAndStatusIn(user, SUPPORTED, SIGNED_OFF) (repository/UserRoleRepository.java:36), then groups by userId (mapToUserRoleActionResponse :261). The result is rendered as a table in DataTable.js:649 through ApproverSupporterList. Only requests already SUPPORTED (and legacy SIGNED_OFF) are listed, matching Functional Document v1.0 p.17; PENDING requests do not appear. The list is filtered per designated approver, not a global 'all pending' list. When empty, NotExistsException is returned as HTTP 200 with a string body (exception/CustomControllerAdvice.java:27) and the UI shows an empty table (ApproverSupporterList.js:6)."
+  },
+  {
+   "step": "Table columns: URAMS ID, Name, Department, Email, Mobile, Role Assigned, Remarks, Actions",
+   "detail": "ApproverSupporterTableHeaderName (spms_common_iz_web_app-main/src/Utility/constant.js:77-86) holds exactly these eight columns (the last one labelled Action). The row cells for module APA (Components/DataTable.js:649-690) fill userId, fullName, department (fallback sectionId), email, phoneNumber, the list of roleIds, remarks, plus the Approve and Reject buttons."
+  },
+  {
+   "step": "Staff clicks Approve or Reject; the request goes to the backend, which updates the application in the DB",
+   "detail": "The Approve/Reject buttons (Components/DataTable.js:678-687) call handleApproveApproverRequest/handleRejectApproverRequest (:110, :95), which send status APPROVED or REJECTED through approverUserAction (Sagas/ACMApprover/ApproverActionSaga.js:19-27) to POST /acm/v1/userRoleMapping/approverUserRoleAction (controller/UserRoleController.java:66). UserRoleService.approverUserRoleAction (:428) calls mapApproverUserRoleAction (:472), which saves status, approvedDate and lastUpdatedBy through userRoleRepository.save (:486-490) for every role in roleIds. The AOP advice UserRoleTransactionService.createApproverAction (:169) records a MODIFY transaction row. Defect note: the UI does not send remarks, while :488 overwrites remarks with request.getRemarks() (null). Remarks filled by the admin at create were already erased earlier in the supporter step (UserRoleService.java:401). The private @Transactional method is called from inside its own class, so no transaction wraps the whole action (needs runtime verification)."
+  },
+  {
+   "step": "Only staff with role AC-APPROVE can perform this action (checked by the system)",
+   "detail": "validateApproverUserOrNot (:444) checks that the user named in the approvedBy field of the request body has role AC-approve or AC-admin (:453). It does not check the logged-in user: the body (approvedBy, userId) comes from the client, and viewRequestByApproverId also takes userId from the body (:407-410). The endpoints are in CSRF_IGNORED_PATHS (security/WebSecurityConfig.java:52-57) and the security chain uses permitAll for '/**' (WebSecurityConfig.java:124, :167) with no hasAuthority/PreAuthorize. So a role check exists in the service but is not bound to the caller identity, and AC-admin also passes (not mentioned in the FSD). JWT authentication for this endpoint is not proven (ACMAuthTokenFilter.java:42-50 does not list approverUserRoleAction); needs runtime verification."
+  },
+  {
+   "step": "Staff can only approve or reject",
+   "detail": "validateApproverRoleStatus (:463-468) rejects any status other than APPROVED or REJECTED with ACMException (HTTP 500 through exception/CustomControllerAdvice.java:42-46). The UI offers only the two buttons (Components/DataTable.js:678-687). There is no check that the current status is SUPPORTED before changing it (mapApproverUserRoleAction :472 overwrites the status of the roles in roleIds as given)."
+  },
+  {
+   "step": "On approval, the role is granted/assigned to the user",
+   "detail": "The APPROVED status is saved in mapApproverUserRoleAction (service/UserRoleService.java:486). The new role takes effect because getLoginUserRole only returns roles with status APPROVED (UserRoleService.java:569-570) and the permission query is also APPROVED only (UserRoleRepository.java:61). The filter ACMAuthTokenFilter.java:101 also loads only APPROVED, but those authorities are not used for authorization (no hasAuthority/PreAuthorize). Functional Document v1.0 p.18 also states that APPROVED means active access."
+  },
+  {
+   "step": "On approval, an email is sent to the staff who submitted the application",
+   "detail": "In approverUserRoleAction (:428-440) an email is sent only when the status is REJECTED (:435-438); the APPROVED path never calls acmEmailServiceHelper. This matches Functional Document v1.0 p.18 ('No automatic email is sent when the Approver completes the final approval') but contradicts FSD v1.2 BR-AA-003. The FSD wins when decks disagree, so this is recorded as Beda dari flow; the client should confirm which document applies."
+  },
+  {
+   "step": "On reject, the status becomes REJECTED and an email is sent to the original requester",
+   "detail": "On REJECTED, the email of adminUserId (the request creator, from getOriginalCreatedBy :433/:499) is looked up through validateApproverEmailID (:436), then acmEmailServiceHelper.sendHTMLEmail uses the template templates/email/acm/acm_admin.json (:437, text 'Your Request for user-role assignment was rejected'). Note: the status update is already saved (:434) before the email is sent; if the requester's email is empty or invalid, ACMException is thrown and the UI gets HTTP 500 although the rejection is saved. If adminUserId is null the email is skipped silently. This step comes from the Functional Document; the FSD does not mention an email on reject."
+  },
+  {
+   "step": "After approve/reject, the request is removed from the Approver Action list",
+   "detail": "After a successful POST the saga immediately dispatches viewApproverApplicationList again (Sagas/ACMApprover/ApproverActionSaga.js:28-29), so the list is re-fetched without a full page reload. The backend only returns SUPPORTED/SIGNED_OFF (service/UserRoleService.java:421), so items already APPROVED or REJECTED no longer appear."
+  },
+  {
+   "step": "If retrieving or submitting data fails, staff sees a modal pop-up with an appropriate error message",
+   "detail": "The global axios interceptor dispatches setApiErrorTrue for HTTP 404/500 (Services/axios.configuration.js:43-45) and setApiError400 for 400 (:46-48); ContentLayout.js:8-24 then shows a 'Something went wrong' Modal with generic text. The specific server message (e.g. 'User is not Approver') is not displayed, and other statuses (401, 403 after retry) show no modal. Errors caught in the saga are only stored in state (Reducers/ACMAppover/ACMApproverListReducer.js:45-49) and no component reads them. A modal exists, but its message is generic rather than an 'appropriate error message'."
+  }
+ ]
+}

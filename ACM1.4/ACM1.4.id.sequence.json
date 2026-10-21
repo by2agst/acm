@@ -1,0 +1,210 @@
+{
+  "schema_version": 1,
+  "diagram_type": "sequence",
+  "meta": {
+    "title": "ACM1.4 Manage Roles (ID)",
+    "output": "ACM1.4/ACM1.4.id.sequence.html",
+    "viewBox": [
+      1080,
+      620
+    ],
+    "column_fit": "spread",
+    "animation": "trace",
+    "quality_profile": "showcase",
+    "views": [
+      {
+        "id": "list",
+        "label": "Daftar dan cari",
+        "focus": [
+          "staff",
+          "web",
+          "api",
+          "db"
+        ],
+        "note": "Tabel role dimuat lewat viewRoles; pencarian memakai contains."
+      },
+      {
+        "id": "save",
+        "label": "Buat dan edit",
+        "focus": [
+          "web",
+          "api",
+          "db"
+        ],
+        "note": "createRole dan updateRole; batas hanya di UI."
+      },
+      {
+        "id": "delete",
+        "label": "Hapus",
+        "focus": [
+          "web",
+          "api",
+          "db"
+        ],
+        "note": "Hapus hanya jika tidak ada user memegang role."
+      }
+    ]
+  },
+  "participants": [
+    {
+      "id": "staff",
+      "type": "external",
+      "label": "Staff",
+      "sublabel": "AC-ADMIN (UI)"
+    },
+    {
+      "id": "web",
+      "type": "frontend",
+      "label": "Web App",
+      "sublabel": "React / saga"
+    },
+    {
+      "id": "api",
+      "type": "backend",
+      "label": "RoleController",
+      "sublabel": "RoleService"
+    },
+    {
+      "id": "db",
+      "type": "database",
+      "label": "ACM_ROLE",
+      "sublabel": "+ relasi user role"
+    }
+  ],
+  "segments": [
+    {
+      "from": 150,
+      "to": 280,
+      "label": "Daftar + cari"
+    },
+    {
+      "from": 290,
+      "to": 385,
+      "label": "Buat / edit"
+    },
+    {
+      "from": 395,
+      "to": 525,
+      "label": "Hapus"
+    }
+  ],
+  "messages": [
+    {
+      "id": "m1",
+      "from": "staff",
+      "to": "web",
+      "y": 160,
+      "label": "buka Manage Roles",
+      "variant": "default"
+    },
+    {
+      "id": "m2",
+      "from": "web",
+      "to": "api",
+      "y": 195,
+      "label": "POST viewRoles {searchText}",
+      "variant": "emphasis"
+    },
+    {
+      "id": "m3",
+      "from": "api",
+      "to": "db",
+      "y": 230,
+      "label": "findAll / Containing",
+      "variant": "default"
+    },
+    {
+      "id": "m4",
+      "from": "api",
+      "to": "web",
+      "y": 265,
+      "label": "daftar role (200)",
+      "variant": "return"
+    },
+    {
+      "id": "m5",
+      "from": "staff",
+      "to": "web",
+      "y": 300,
+      "label": "form Add/Edit, Submit",
+      "variant": "default"
+    },
+    {
+      "id": "m6",
+      "from": "web",
+      "to": "api",
+      "y": 335,
+      "label": "createRole / updateRole",
+      "variant": "emphasis"
+    },
+    {
+      "id": "m7",
+      "from": "api",
+      "to": "db",
+      "y": 370,
+      "label": "save (cek roleId dobel)",
+      "variant": "default"
+    },
+    {
+      "id": "m8",
+      "from": "staff",
+      "to": "web",
+      "y": 405,
+      "label": "Delete + konfirmasi",
+      "variant": "default"
+    },
+    {
+      "id": "m9",
+      "from": "web",
+      "to": "api",
+      "y": 440,
+      "label": "POST deleteRole",
+      "variant": "emphasis"
+    },
+    {
+      "id": "m10",
+      "from": "api",
+      "to": "db",
+      "y": 475,
+      "label": "cari user pada role",
+      "variant": "default"
+    },
+    {
+      "id": "m11",
+      "from": "api",
+      "to": "web",
+      "y": 510,
+      "label": "hapus OK / ACM500",
+      "variant": "return"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Sesuai flow",
+      "items": [
+        "List, search, export CSV",
+        "Create role tersimpan ke DB",
+        "Delete diblok jika masih dipakai user"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Celah",
+      "items": [
+        "Tidak ada cek AC-ADMIN di server",
+        "Edit description-only hanya di UI",
+        "Tidak ada field URL, tidak ada sort kolom"
+      ]
+    },
+    {
+      "dot": "orange",
+      "title": "Perlu verifikasi",
+      "items": [
+        "Login AAD tidak ditelusuri",
+        "Casing role id AC-admin vs AC-ADMIN",
+        "Edit bisa salah baris jika page size bukan 10"
+      ]
+    }
+  ]
+}

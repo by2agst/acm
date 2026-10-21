@@ -1,0 +1,240 @@
+{
+ "schema_version": 1,
+ "diagram_type": "sequence",
+ "meta": {
+  "title": "ACM1.2 Manage Modules",
+  "output": "ACM1.2.id.sequence.html",
+  "viewBox": [
+   1080,
+   620
+  ],
+  "column_fit": "spread",
+  "animation": "trace",
+  "quality_profile": "showcase",
+  "views": [
+   {
+    "id": "list",
+    "label": "Daftar dan cari",
+    "focus": [
+     "staff",
+     "web",
+     "api",
+     "db"
+    ],
+    "note": "Daftar dan cari jalan; tidak ada kontrol sort."
+   },
+   {
+    "id": "save",
+    "label": "Buat dan edit",
+    "focus": [
+     "staff",
+     "web",
+     "api",
+     "db"
+    ],
+    "note": "Edit hanya description hanya di UI."
+   },
+   {
+    "id": "delete",
+    "label": "Hapus",
+    "focus": [
+     "staff",
+     "web",
+     "api",
+     "db"
+    ],
+    "note": "Cascade menghapus function, bukan role."
+   }
+  ]
+ },
+ "participants": [
+  {
+   "id": "staff",
+   "type": "external",
+   "label": "Staff",
+   "sublabel": "AC-ADMIN"
+  },
+  {
+   "id": "web",
+   "type": "frontend",
+   "label": "Web App",
+   "sublabel": "React ACM"
+  },
+  {
+   "id": "api",
+   "type": "backend",
+   "label": "Module API",
+   "sublabel": "appmodule"
+  },
+  {
+   "id": "db",
+   "type": "database",
+   "label": "ACM DB",
+   "sublabel": "ACM_APPLICATION_MODULE"
+  }
+ ],
+ "segments": [
+  {
+   "from": 150,
+   "to": 270,
+   "label": "Daftar + cari"
+  },
+  {
+   "from": 280,
+   "to": 400,
+   "label": "Buat + edit"
+  },
+  {
+   "from": 408,
+   "to": 525,
+   "label": "Hapus"
+  }
+ ],
+ "messages": [
+  {
+   "id": "open",
+   "from": "staff",
+   "to": "web",
+   "y": 160,
+   "label": "buka Manage Modules",
+   "variant": "default"
+  },
+  {
+   "id": "list",
+   "from": "web",
+   "to": "api",
+   "y": 192,
+   "label": "POST viewAllModules",
+   "variant": "emphasis"
+  },
+  {
+   "id": "q",
+   "from": "api",
+   "to": "db",
+   "y": 224,
+   "label": "findAll / cari contains",
+   "variant": "default"
+  },
+  {
+   "id": "rows",
+   "from": "db",
+   "to": "api",
+   "y": 256,
+   "label": "baris",
+   "variant": "return"
+  },
+  {
+   "id": "resp",
+   "from": "api",
+   "to": "web",
+   "y": 288,
+   "label": "daftar module (tanpa cek role)",
+   "variant": "return"
+  },
+  {
+   "id": "form",
+   "from": "staff",
+   "to": "web",
+   "y": 320,
+   "label": "tambah / edit description",
+   "variant": "default"
+  },
+  {
+   "id": "save",
+   "from": "web",
+   "to": "api",
+   "y": 352,
+   "label": "createModule / updateModule",
+   "variant": "emphasis"
+  },
+  {
+   "id": "persist",
+   "from": "api",
+   "to": "db",
+   "y": 384,
+   "label": "save (name bisa diubah)",
+   "variant": "default"
+  },
+  {
+   "id": "del",
+   "from": "staff",
+   "to": "web",
+   "y": 416,
+   "label": "hapus + modal konfirmasi",
+   "variant": "default"
+  },
+  {
+   "id": "delreq",
+   "from": "web",
+   "to": "api",
+   "y": 448,
+   "label": "POST deleteModule",
+   "variant": "emphasis"
+  },
+  {
+   "id": "rm",
+   "from": "api",
+   "to": "db",
+   "y": 480,
+   "label": "hapus + cascade function",
+   "variant": "default"
+  },
+  {
+   "id": "ok",
+   "from": "api",
+   "to": "web",
+   "y": 512,
+   "label": "200 teks (tanpa modal error)",
+   "variant": "return"
+  }
+ ],
+ "activations": [
+  {
+   "participant": "web",
+   "from": 155,
+   "to": 517,
+   "type": "frontend"
+  },
+  {
+   "participant": "api",
+   "from": 187,
+   "to": 517,
+   "type": "backend"
+  },
+  {
+   "participant": "db",
+   "from": 219,
+   "to": 486,
+   "type": "database"
+  }
+ ],
+ "cards": [
+  {
+   "dot": "emerald",
+   "title": "Sesuai flow",
+   "items": [
+    "List, cari, tambah, konfirmasi hapus jalan",
+    "Create langsung simpan, tanpa approval",
+    "Hard delete menghapus function"
+   ]
+  },
+  {
+   "dot": "rose",
+   "title": "Gap",
+   "items": [
+    "Tidak ada sort Module ID / Name",
+    "API tanpa cek AC-ADMIN",
+    "API masih menerima ganti name"
+   ]
+  },
+  {
+   "dot": "orange",
+   "title": "Perlu verifikasi",
+   "items": [
+    "Cascade bergantung derived delete JPA",
+    "Role id AC-admin vs AC-ADMIN di DB",
+    "Export CSV, teks error umum"
+   ]
+  }
+ ]
+}

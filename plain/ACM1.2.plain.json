@@ -1,0 +1,77 @@
+{
+ "story": "ACM1.2",
+ "steps": [
+  {
+   "en": "Only AC-ADMIN staff can open Manage Modules",
+   "id": "Hanya staff AC-ADMIN yang bisa membuka Manage Modules",
+   "why_en": "Only the menu is restricted; nothing behind the screen checks the role.",
+   "why_id": "Hanya menu yang dibatasi; di balik layar tidak mengecek role."
+  },
+  {
+   "en": "Staff sees the list of all modules",
+   "id": "Staff melihat daftar semua module",
+   "why_en": "",
+   "why_id": ""
+  },
+  {
+   "en": "Staff can search the module list",
+   "id": "Staff bisa mencari di daftar module",
+   "why_en": "",
+   "why_id": ""
+  },
+  {
+   "en": "Staff can sort the list by column",
+   "id": "Staff bisa mengurutkan daftar per kolom",
+   "why_en": "The list has a fixed order by name; no sort control.",
+   "why_id": "Daftar hanya berurutan tetap menurut nama; tidak ada kontrol sort."
+  },
+  {
+   "en": "Staff can export the shown list to Excel",
+   "id": "Staff bisa mengekspor daftar yang tampil ke Excel",
+   "why_en": "The export is a CSV file, not an Excel file.",
+   "why_id": "Hasil ekspor berupa file CSV, bukan file Excel."
+  },
+  {
+   "en": "Add New Module opens the module form",
+   "id": "Add New Module membuka form module",
+   "why_en": "",
+   "why_id": ""
+  },
+  {
+   "en": "Submitting the form creates the module",
+   "id": "Submit form membuat module baru",
+   "why_en": "",
+   "why_id": ""
+  },
+  {
+   "en": "Editing a module changes only its description",
+   "id": "Edit module hanya mengubah description",
+   "why_en": "The screen locks other fields, but the system still accepts a name change.",
+   "why_id": "Layar mengunci kolom lain, tetapi di balik layar masih menerima ganti nama."
+  },
+  {
+   "en": "Delete asks for confirmation, then removes the module",
+   "id": "Hapus meminta konfirmasi, lalu module dihapus",
+   "why_en": "",
+   "why_id": ""
+  },
+  {
+   "en": "Deleting a module also removes its roles and functions",
+   "id": "Hapus module ikut menghapus role dan function-nya",
+   "why_en": "Functions and role mappings are removed, but the roles themselves stay.",
+   "why_id": "Function dan mapping role ikut terhapus, tetapi role-nya tetap ada."
+  },
+  {
+   "en": "Staff sees an error message when something fails",
+   "id": "Staff melihat pesan error saat ada yang gagal",
+   "why_en": "The error message is generic, and missing-module cases show no error.",
+   "why_id": "Pesan error bersifat umum, dan kasus module tidak ada tidak menampilkan error."
+  },
+  {
+   "en": "Module changes take effect without approval",
+   "id": "Perubahan module langsung berlaku tanpa approval",
+   "why_en": "",
+   "why_id": ""
+  }
+ ]
+}

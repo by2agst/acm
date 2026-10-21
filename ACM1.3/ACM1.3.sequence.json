@@ -1,0 +1,248 @@
+{
+ "schema_version": 1,
+ "diagram_type": "sequence",
+ "meta": {
+  "title": "ACM1.3 Manage User",
+  "output": "ACM1.3.sequence.html",
+  "viewBox": [
+   1080,
+   620
+  ],
+  "column_fit": "spread",
+  "animation": "trace",
+  "quality_profile": "showcase",
+  "views": [
+   {
+    "id": "list",
+    "label": "List and search",
+    "focus": [
+     "staff",
+     "web",
+     "api",
+     "db"
+    ],
+    "note": "List works; search by ID only, no sort."
+   },
+   {
+    "id": "add",
+    "label": "Add from UIAM",
+    "focus": [
+     "staff",
+     "web",
+     "api",
+     "uiam",
+     "db"
+    ],
+    "note": "Default user type is ADMIN."
+   },
+   {
+    "id": "edit",
+    "label": "Edit and delete",
+    "focus": [
+     "staff",
+     "web",
+     "api",
+     "db"
+    ],
+    "note": "Delete is a soft delete."
+   }
+  ],
+  "locale": "en"
+ },
+ "participants": [
+  {
+   "id": "staff",
+   "type": "external",
+   "label": "Staff",
+   "sublabel": "AC-ADMIN"
+  },
+  {
+   "id": "web",
+   "type": "frontend",
+   "label": "Web App",
+   "sublabel": "React ACM"
+  },
+  {
+   "id": "api",
+   "type": "backend",
+   "label": "User API",
+   "sublabel": "/acm/v1/user"
+  },
+  {
+   "id": "uiam",
+   "type": "database",
+   "label": "UIAM View",
+   "sublabel": "v_uiam2_all_staff"
+  },
+  {
+   "id": "db",
+   "type": "database",
+   "label": "ACM DB",
+   "sublabel": "ACM_USER"
+  }
+ ],
+ "segments": [
+  {
+   "from": 150,
+   "to": 270,
+   "label": "List + search"
+  },
+  {
+   "from": 280,
+   "to": 400,
+   "label": "Add user"
+  },
+  {
+   "from": 408,
+   "to": 525,
+   "label": "Edit + delete"
+  }
+ ],
+ "messages": [
+  {
+   "id": "m0",
+   "from": "staff",
+   "to": "web",
+   "y": 160,
+   "label": "open Manage User",
+   "variant": "default"
+  },
+  {
+   "id": "m1",
+   "from": "web",
+   "to": "api",
+   "y": 192,
+   "label": "POST viewAllUsers",
+   "variant": "emphasis"
+  },
+  {
+   "id": "m2",
+   "from": "api",
+   "to": "db",
+   "y": 224,
+   "label": "ACTIVE users by userId",
+   "variant": "default"
+  },
+  {
+   "id": "m3",
+   "from": "staff",
+   "to": "web",
+   "y": 256,
+   "label": "Add User tab, search",
+   "variant": "default"
+  },
+  {
+   "id": "m4",
+   "from": "web",
+   "to": "api",
+   "y": 288,
+   "label": "UIAM list (search filtered in web)",
+   "variant": "emphasis"
+  },
+  {
+   "id": "m5",
+   "from": "api",
+   "to": "uiam",
+   "y": 320,
+   "label": "read UIAM staff view",
+   "variant": "default"
+  },
+  {
+   "id": "m6",
+   "from": "web",
+   "to": "api",
+   "y": 352,
+   "label": "createUser + user type",
+   "variant": "emphasis"
+  },
+  {
+   "id": "m7",
+   "from": "api",
+   "to": "db",
+   "y": 384,
+   "label": "save ACTIVE row, no approval",
+   "variant": "default"
+  },
+  {
+   "id": "m8",
+   "from": "staff",
+   "to": "web",
+   "y": 416,
+   "label": "edit mobile / delete + confirm",
+   "variant": "default"
+  },
+  {
+   "id": "m9",
+   "from": "web",
+   "to": "api",
+   "y": 448,
+   "label": "updateUser / deleteUser",
+   "variant": "emphasis"
+  },
+  {
+   "id": "m10",
+   "from": "api",
+   "to": "db",
+   "y": 480,
+   "label": "set phone / set INACTIVE",
+   "variant": "default"
+  },
+  {
+   "id": "m11",
+   "from": "api",
+   "to": "web",
+   "y": 512,
+   "label": "200 text (errors generic)",
+   "variant": "return"
+  }
+ ],
+ "activations": [
+  {
+   "participant": "web",
+   "from": 155,
+   "to": 517,
+   "type": "frontend"
+  },
+  {
+   "participant": "api",
+   "from": 187,
+   "to": 517,
+   "type": "backend"
+  },
+  {
+   "participant": "db",
+   "from": 219,
+   "to": 486,
+   "type": "database"
+  }
+ ],
+ "cards": [
+  {
+   "dot": "emerald",
+   "title": "Matches flow",
+   "items": [
+    "Active user list with 6 fields",
+    "Add from UIAM, no approval",
+    "Edit changes mobile only"
+   ]
+  },
+  {
+   "dot": "rose",
+   "title": "Gap",
+   "items": [
+    "No AC-ADMIN check on the API",
+    "No sort; Name search missing",
+    "Delete is soft; export is CSV"
+   ]
+  },
+  {
+   "dot": "orange",
+   "title": "To verify",
+   "items": [
+    "UIAM view content",
+    "Default ADMIN vs dropdown shown",
+    "Error modal in a browser"
+   ]
+  }
+ ]
+}

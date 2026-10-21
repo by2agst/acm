@@ -1,0 +1,55 @@
+{
+ "story": "ACM1.11",
+ "code_commit": "90482ed",
+ "flow_ref": "FSD v1.2 section 1.11 (page 22)",
+ "code_summary": "Scheduler Spring @Scheduled (cron 0 30 20 * * *) membaca view V_UIAM2_RESIGNED_STAFF, mencari user di ACM_USER, menyalin lalu menghapus ACM_USER_ROLE, dan set status INACTIVE.",
+ "note": "Job harian soft delete resigned user ada di spms_common_iz_api_app-main. Langkah 1 (refresh view jam 19:00) tidak ada di repo. Di luar flow: ShedLock, email error ke support, log role ke DELETED_ACM_USER_ROLE_LOG, dan endpoint manual POST /acm/v1/scheduler/softDeleteAcmUserScheduler (WebSecurityConfig.java:63, tidak ada autentikasi/otorisasi di repo untuk endpoint ini: tidak di allowlist filter, CSRF dikecualikan, permitAll; gateway di depan app tidak terlihat dari repo). Time zone cron mengikuti server (cannot verify from repo). Deck Functional Document v1.0 tidak membahas story ini.",
+ "recommendation": "Konfirmasi ke tim DB/UIAM siapa yang me-refresh view jam 19:00 dan time zone server job. Amankan juga endpoint manual softDeleteAcmUserScheduler.",
+ "steps": [
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf",
+   "slide": "page 22",
+   "step": "Setiap hari jam 7 malam, view V_UIAM2_RESIGNED_STAFF diperbarui dengan data staff resign terbaru.",
+   "repo": "spms_common_iz_api_app-main",
+   "code_ref": "spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/entities/VUiam2ResignedStaff.java:17",
+   "fit": "Tidak ada code",
+   "detail": "Repo hanya membaca view V_UIAM2_RESIGNED_STAFF (@Entity @Immutable, @Table schema cascomizmgr). Tidak ada job, SQL, atau script di repo yang me-refresh view jam 19:00 atau mendefinisikan isi view-nya (grep di src/main/resources tidak menemukan V_UIAM2). Cannot verify from repo; kemungkinan dikerjakan di DB/UIAM, di luar code ACM."
+  },
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf",
+   "slide": "page 22",
+   "step": "Setiap hari jam 8:30 malam, job softDeleteAcmUsers jalan.",
+   "repo": "spms_common_iz_api_app-main",
+   "code_ref": "spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/service/scheduler/SoftDeleteAcmUserScheduler.java:23",
+   "fit": "Sebagian",
+   "detail": "@Scheduled(cron = \"${acm.delete.user.job}\") dan spms_common_iz_api_app-main/src/main/resources/application.yml:74 berisi acm.delete.user.job: 0 30 20 * * * (20:30 setiap hari). Tambahan di luar flow: @SchedulerLock ShedLock (SoftDeleteAcmUserScheduler.java:26) supaya hanya satu instance yang menjalankan job (komentar kode menyebut 3 instance), dan email error ke support kalau gagal (baris 34). Time zone tidak di-set di cron; hanya Joda yang diset ke Asia/Singapore (ACMApplication.java:22), jadi scheduler mengikuti time zone JVM. Jam 20:30 waktu Singapura tidak terbukti dari repo (cannot verify from repo), karena itu step dinilai Sebagian. application-local.yml mematikan scheduler untuk local. application-local.yml mematikan scheduler untuk local."
+  },
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf",
+   "slide": "page 22",
+   "step": "Job mengambil semua resigned user dari view, lalu mencari user id yang sama di tabel ACM_USER.",
+   "repo": "spms_common_iz_api_app-main",
+   "code_ref": "spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/repository/VUiam2ResignedStaffRepository.java:11",
+   "fit": "Sesuai",
+   "detail": "Native query join cascomizmgr.V_UIAM2_RESIGNED_STAFF dengan ACM_USER (UR.USER_ID = AU.USER_ID) mengembalikan ID ACM_USER. Helper lalu userRepository.findById per id (SoftDeleteAcmUserServiceHelper.java:31-32) dan memproses record yang ketemu (ifPresent, baris 33). Tidak ada filter status, jadi user yang sudah INACTIVE ikut terambil lagi tiap hari (tidak berbahaya karena role-nya sudah kosong). Efek samping: updatedBy dan updatedDate ditimpa tiap malam (baris 36-37), dan role yang diberikan lagi ke user yang masih ada di view akan dihapus lagi."
+  },
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf",
+   "slide": "page 22",
+   "step": "Untuk user yang ketemu, record-nya di tabel ACM_USER_ROLE dihapus.",
+   "repo": "spms_common_iz_api_app-main",
+   "code_ref": "spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/service/scheduler/SoftDeleteAcmUserServiceHelper.java:48",
+   "fit": "Sesuai",
+   "detail": "userRoleService.deleteRolesByUser(user.getId()) (UserRoleService.java:715) memanggil userRoleRepository.deleteByUserId (UserRoleRepository.java:26) yang menghapus semua baris user_role milik user. Tambahan di luar flow: sebelum dihapus, tiap role disalin ke DELETED_ACM_USER_ROLE_LOG (SoftDeleteAcmUserServiceHelper.java:38-47, entity DeletedAcmUserRoleLog.java:13). Seluruh proses ada dalam satu @Transactional (baris 27). Catatan: kolom ROLE_ID di log berisi id baris user_role (baris 40), bukan kode role."
+  },
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf",
+   "slide": "page 22",
+   "step": "Setelah role dihapus, status user di ACM_USER diubah menjadi INACTIVE.",
+   "repo": "spms_common_iz_api_app-main",
+   "code_ref": "spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/service/scheduler/SoftDeleteAcmUserServiceHelper.java:35",
+   "fit": "Sesuai",
+   "detail": "user.setStatus(UserStatus.INACTIVE) di baris 35 (updatedBy SYSTEM baris 36, updatedDate baris 37) lalu userRepository.save(user) di baris 49, setelah deleteRolesByUser di baris 48. Record user tidak dihapus dari ACM_USER, hanya di-soft delete, sama dengan teks flow (update status)."
+  }
+ ]
+}

@@ -1,0 +1,197 @@
+{
+ "schema_version": 1,
+ "diagram_type": "sequence",
+ "meta": {
+  "title": "ACM1.6 Grant Role ke User",
+  "output": "ACM1.6.id.sequence.html",
+  "viewBox": [
+   1080,
+   620
+  ],
+  "column_fit": "spread",
+  "animation": "trace",
+  "quality_profile": "showcase"
+ },
+ "participants": [
+  {
+   "id": "staff",
+   "type": "external",
+   "label": "Staff",
+   "sublabel": "user AC-ADMIN"
+  },
+  {
+   "id": "web",
+   "type": "frontend",
+   "label": "Web App",
+   "sublabel": "React UI"
+  },
+  {
+   "id": "api",
+   "type": "backend",
+   "label": "ACM API",
+   "sublabel": "UserRoleService"
+  },
+  {
+   "id": "db",
+   "type": "database",
+   "label": "ACM DB",
+   "sublabel": "ACM_USER_ROLE"
+  },
+  {
+   "id": "mail",
+   "type": "messagebus",
+   "label": "Email",
+   "sublabel": "notif supporter"
+  }
+ ],
+ "segments": [
+  {
+   "from": 150,
+   "to": 255,
+   "label": "Daftar user"
+  },
+  {
+   "from": 258,
+   "to": 325,
+   "label": "Form edit"
+  },
+  {
+   "from": 328,
+   "to": 528,
+   "label": "Submit"
+  }
+ ],
+ "messages": [
+  {
+   "id": "ma",
+   "from": "staff",
+   "to": "web",
+   "y": 160,
+   "label": "buka User Role Mapping",
+   "variant": "default"
+  },
+  {
+   "id": "mb",
+   "from": "web",
+   "to": "api",
+   "y": 195,
+   "label": "POST viewAllUsers",
+   "variant": "emphasis"
+  },
+  {
+   "id": "mc",
+   "from": "api",
+   "to": "db",
+   "y": 225,
+   "label": "baca user ACTIVE",
+   "variant": "default"
+  },
+  {
+   "id": "md",
+   "from": "web",
+   "to": "api",
+   "y": 270,
+   "label": "viewRoleByUserId + dropdown",
+   "variant": "default"
+  },
+  {
+   "id": "me",
+   "from": "staff",
+   "to": "web",
+   "y": 305,
+   "label": "pilih role, supporter, approver",
+   "variant": "default"
+  },
+  {
+   "id": "mf",
+   "from": "web",
+   "to": "api",
+   "y": 340,
+   "label": "POST mapUserRole",
+   "variant": "emphasis"
+  },
+  {
+   "id": "mg",
+   "from": "api",
+   "to": "db",
+   "y": 375,
+   "label": "simpan UserRole PENDING",
+   "variant": "emphasis"
+  },
+  {
+   "id": "mh",
+   "from": "api",
+   "to": "db",
+   "y": 410,
+   "label": "hapus role dicabut (tanpa approval)",
+   "variant": "security"
+  },
+  {
+   "id": "mi",
+   "from": "api",
+   "to": "mail",
+   "y": 445,
+   "label": "email supporter",
+   "variant": "dashed"
+  },
+  {
+   "id": "mj",
+   "from": "api",
+   "to": "web",
+   "y": 480,
+   "label": "200 request role dibuat",
+   "variant": "return"
+  },
+  {
+   "id": "mk",
+   "from": "web",
+   "to": "staff",
+   "y": 515,
+   "label": "tabel dimuat ulang",
+   "variant": "return"
+  }
+ ],
+ "activations": [
+  {
+   "participant": "web",
+   "from": 155,
+   "to": 520,
+   "type": "frontend"
+  },
+  {
+   "participant": "api",
+   "from": 190,
+   "to": 485,
+   "type": "backend"
+  }
+ ],
+ "cards": [
+  {
+   "dot": "emerald",
+   "title": "Sesuai flow",
+   "items": [
+    "Daftar user ACTIVE dan form edit termuat",
+    "Role baru disimpan PENDING dengan supporter dan approver",
+    "Supporter dikirimi email saat submit"
+   ]
+  },
+  {
+   "dot": "rose",
+   "title": "Gap",
+   "items": [
+    "Role yang dicabut langsung dihapus, tanpa approval",
+    "AC-ADMIN hanya dicek di menu UI",
+    "Tidak ada batas role per aplikasi"
+   ]
+  },
+  {
+   "dot": "orange",
+   "title": "Perlu diverifikasi",
+   "items": [
+    "Pengiriman email nyata",
+    "Sort kolom di tabel user",
+    "Nama role AC-admin per environment"
+   ]
+  }
+ ]
+}

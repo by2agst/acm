@@ -1,0 +1,224 @@
+{
+ "schema_version": 1,
+ "diagram_type": "sequence",
+ "meta": {
+  "title": "ACM1.11 Delete Resigned Staff",
+  "output": "ACM1.11.sequence.html",
+  "locale": "en",
+  "viewBox": [
+   1080,
+   620
+  ],
+  "column_fit": "spread",
+  "animation": "trace",
+  "quality_profile": "showcase",
+  "views": [
+   {
+    "id": "fetch",
+    "label": "Fetch resigned users",
+    "focus": [
+     "job",
+     "svc",
+     "view"
+    ],
+    "note": "Job joins the view with ACM_USER."
+   },
+   {
+    "id": "soft-delete",
+    "label": "Remove roles, inactivate",
+    "focus": [
+     "svc",
+     "db"
+    ],
+    "note": "Roles deleted, user kept as INACTIVE."
+   },
+   {
+    "id": "failure",
+    "label": "Failure path",
+    "focus": [
+     "job",
+     "mail"
+    ],
+    "note": "Not in the flow: error email."
+   }
+  ]
+ },
+ "participants": [
+  {
+   "id": "view",
+   "type": "external",
+   "label": "V_UIAM2_RESIGNED_STAFF",
+   "sublabel": "DB view, refresh not in repo"
+  },
+  {
+   "id": "job",
+   "type": "backend",
+   "label": "Scheduler",
+   "sublabel": "SoftDeleteAcmUserScheduler"
+  },
+  {
+   "id": "svc",
+   "type": "backend",
+   "label": "ServiceHelper",
+   "sublabel": "SoftDeleteAcmUserServiceHelper"
+  },
+  {
+   "id": "db",
+   "type": "database",
+   "label": "ACM_USER / ROLE",
+   "sublabel": "Azure SQL"
+  },
+  {
+   "id": "mail",
+   "type": "external",
+   "label": "Support email",
+   "sublabel": "ACMEmailServiceHelper"
+  }
+ ],
+ "segments": [
+  {
+   "from": 150,
+   "to": 270,
+   "label": "Fetch"
+  },
+  {
+   "from": 282,
+   "to": 440,
+   "label": "Soft delete"
+  },
+  {
+   "from": 448,
+   "to": 535,
+   "label": "Result"
+  }
+ ],
+ "messages": [
+  {
+   "id": "m1",
+   "from": "job",
+   "to": "svc",
+   "y": 176,
+   "label": "cron 0 30 20 * * * fires",
+   "variant": "emphasis"
+  },
+  {
+   "id": "m2",
+   "from": "svc",
+   "to": "view",
+   "y": 212,
+   "label": "join view + ACM_USER",
+   "variant": "emphasis"
+  },
+  {
+   "id": "m3",
+   "from": "view",
+   "to": "svc",
+   "y": 248,
+   "label": "matching ACM_USER ids",
+   "variant": "return"
+  },
+  {
+   "id": "m4",
+   "from": "svc",
+   "to": "db",
+   "y": 300,
+   "label": "findById (no status filter)",
+   "variant": "default"
+  },
+  {
+   "id": "m5",
+   "from": "svc",
+   "to": "db",
+   "y": 336,
+   "label": "copy roles to log table",
+   "variant": "dashed"
+  },
+  {
+   "id": "m6",
+   "from": "svc",
+   "to": "db",
+   "y": 372,
+   "label": "deleteByUserId (ACM_USER_ROLE)",
+   "variant": "emphasis"
+  },
+  {
+   "id": "m7",
+   "from": "svc",
+   "to": "db",
+   "y": 424,
+   "label": "status = INACTIVE, save",
+   "variant": "emphasis"
+  },
+  {
+   "id": "m8",
+   "from": "svc",
+   "to": "job",
+   "y": 460,
+   "label": "SUCCESS or ACMException",
+   "variant": "return"
+  },
+  {
+   "id": "m9",
+   "from": "job",
+   "to": "mail",
+   "y": 508,
+   "label": "error email if failed",
+   "variant": "dashed"
+  }
+ ],
+ "activations": [
+  {
+   "participant": "job",
+   "from": 170,
+   "to": 514,
+   "type": "backend"
+  },
+  {
+   "participant": "svc",
+   "from": 170,
+   "to": 466,
+   "type": "backend"
+  },
+  {
+   "participant": "view",
+   "from": 206,
+   "to": 254,
+   "type": "external"
+  },
+  {
+   "participant": "db",
+   "from": 294,
+   "to": 430,
+   "type": "database"
+  }
+ ],
+ "cards": [
+  {
+   "dot": "emerald",
+   "title": "Matches the flow",
+   "items": [
+    "Daily job at 20:30 (cron in application.yml)",
+    "Roles deleted, then user set to INACTIVE",
+    "User row kept (soft delete)"
+   ]
+  },
+  {
+   "dot": "rose",
+   "title": "Gap vs flow",
+   "items": [
+    "7 PM view refresh has no code in the repo",
+    "Extra: role copy to DELETED_ACM_USER_ROLE_LOG",
+    "Extra: ShedLock, error email, manual endpoint"
+   ]
+  },
+  {
+   "dot": "orange",
+   "title": "To verify",
+   "items": [
+    "Who refreshes the view and when",
+    "Server time zone of the 20:30 cron",
+    "Manual endpoint authentication"
+   ]
+  }
+ ]
+}

@@ -1,0 +1,35 @@
+{
+ "story": "ACM1.11",
+ "steps": [
+  {
+   "en": "Resigned staff list is refreshed every evening.",
+   "id": "Daftar staff resign di-refresh tiap malam.",
+   "why_en": "Nothing in the code refreshes this list; it is probably done by another system.",
+   "why_id": "Tidak ada kode yang me-refresh daftar ini; kemungkinan dikerjakan sistem lain."
+  },
+  {
+   "en": "A daily job starts at 8:30 PM.",
+   "id": "Job harian mulai jam 8:30 malam.",
+   "why_en": "The job is set for 8:30 PM, but the real clock time is not proven from the code.",
+   "why_id": "Job diatur jam 20:30, tapi jam sebenarnya tidak terbukti dari kode."
+  },
+  {
+   "en": "The job reads resigned staff and finds matching ACM users.",
+   "id": "Job membaca staff resign dan mencari user ACM yang cocok.",
+   "why_en": "",
+   "why_id": ""
+  },
+  {
+   "en": "The matching user's role assignments are removed.",
+   "id": "Role milik user yang cocok dihapus.",
+   "why_en": "",
+   "why_id": ""
+  },
+  {
+   "en": "The user is set to inactive, not deleted.",
+   "id": "User dijadikan INACTIVE, bukan dihapus.",
+   "why_en": "",
+   "why_id": ""
+  }
+ ]
+}

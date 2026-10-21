@@ -1,0 +1,45 @@
+{
+ "story": "ACM1.8",
+ "flow_ref": "ACM_FSD _v1.2.pdf section 1.8 (p.17-18, wins); ACM_Functional_Document_v1.0.pdf section 13 (p.16-17); HCL_CAC.pptx has no supporter slide",
+ "code_summary": "UI: LayoutACM.js filters the dropdown by accessRole AC-support, Containers/ACM/index.js loads the list through ViewSupporterApplicationSaga, DataTable.js (module SPA) renders the table and the Approve/Reject buttons sent through SupporterActionSaga. API: UserRoleController /viewRequestBySupporterId and /supporterUserRoleAction -> UserRoleService (query PENDING, set SUPPORTED/REJECTED, send email). Audit via UserRoleTransactionService.createSupporterAction (AOP).",
+ "note": "Flow baseline: FSD v1.2 wins; Functional Document v1.0 completes the email step (BR-SA-003/004 are also in the FSD). Code from git commit 90482ed at project root. Gap: the UI does not send remarks and UserRoleService.java:401 overwrites them with null. Evidence % is recomputed from the fits.",
+ "recommendation": "Claim with caveats: the pending list, Approve/Reject and status update are proven in code. The AC-SUPPORT role gate is firm only in the UI; the server accepts AC-admin and takes identity from the body without JWT, so 'only AC-SUPPORT' must not be claimed in full.",
+ "steps": [
+  {
+   "step": "Staff logs in to the Staff Portal via AAD and lands in ACM",
+   "detail": "RoutesConfig.js:28-37 calls instance.loginRedirect(loginRequest) (AAD) when the user is not authenticated. Entering the ACM page is guarded by PrivateRouteACMConfig (spms_common_iz_web_app-main/src/Navigation/PrivateRouteConfig.js:10-35), which only checks that the user has the ACM application, not the AC-support role. The API does not apply JWT/AAD validation to the supporter endpoints (see step 6). The Staff Portal landing page is outside this repo, cannot verify from repo."
+  },
+  {
+   "step": "Staff selects Supporter Action from the Application Module dropdown (AC-SUPPORT role only)",
+   "detail": "constant.js:22 defines the 'Supporter Action' option with accessRole 'AC-support'. LayoutACM.js:49-51 adds the option to the dropdown only if the user's roleList (from LoginUserRoleState) contains that accessRole. Choosing 'SPA' redirects to /acm/supporter-action (spms_common_iz_web_app-main/src/Packages/Common.js:21-22; RoutesConfig.js:178). Note: this is a UI filter; the URL can still be opened directly (the route only checks the ACM application). The gate is only in the menu and the route does not check the role (PrivateRouteConfig.js:25-30), so it is graded Sebagian, like ACM1.7 step 2 and ACM1.9 step 1."
+  },
+  {
+   "step": "System loads all pending applications (role assignments) that need approval",
+   "detail": "Containers/ACM/index.js:71 dispatches viewSupporterApplicationList({userId: userName}) when moduleType is 'SPA'; ViewSupporterApplicationSaga.js:17-22 POSTs to VIEW_REQUEST_BY_SUPPORTER_ID (ServiceConfig.js:70). UserRoleController.java:48-52 -> UserRoleService.viewRequestBySupporterId (UserRoleService.java:243) -> findAllSupporterUserRole, which queries userRoleRepository.findBySupporterAndStatusIn(user, [PENDING]) (UserRoleService.java:254). The result is grouped by userId (UserRoleService.java:249). Full UI path: spms_common_iz_web_app-main/src/Containers/ACM/index.js:71. The list is filtered per supporter (userId from the body, UserRoleService.java:245,254), not all pending requests globally."
+  },
+  {
+   "step": "Table shows URAMS Id, Name, Department, Email, Mobile, Role Assigned, Remarks, Actions",
+   "detail": "ApproverSupporterTableHeaderName (constant.js:77-86) contains exactly those 8 columns. ApproverSupporterList.js:17 passes the header to DataTable; DataTable.js:696-740 renders the SPA rows: userId, fullName, department/sectionId, email, phoneNumber, list of roleId, remarks, Approve/Reject buttons."
+  },
+  {
+   "step": "Staff clicks Approve or Reject, backend updates the application in the DB",
+   "detail": "DataTable.js:126-154 builds formData with status 'REJECTED' or 'SUPPORTED' and dispatches supporterUserAction; SupporterActionSaga.js:19-27 POSTs to SUPPORTER_USER_ACTION (ServiceConfig.js:71). UserRoleController.java:54-58 -> UserRoleService.supporterUserRoleAction (UserRoleService.java:321) -> mapSupporterUserRoleAction, which sets status (UserRoleService.java:399), supportedDate (400), remarks (401) and calls userRoleRepository.save. Approve in the UI sets the status to SUPPORTED (not APPROVED), matching Functional Document 13.2 (p.16); the final APPROVED happens in the Approver step. The UI does not send remarks, while UserRoleService.java:401 overwrites the remarks with request.getRemarks() (null), so an existing remark (filled by the admin at create) is erased when the supporter approves or rejects (the same defect as ACM1.9 step 4)."
+  },
+  {
+   "step": "Only staff with the AC-SUPPORT role may perform this action",
+   "detail": "validateSupporterUserOrNot (UserRoleService.java:340) is called at UserRoleService.java:323 with request.getSupportedBy() from the body, and lets through role 'AC-support' OR 'AC-admin' (UserRoleService.java:349). So an admin can also act, which differs from 'only AC-SUPPORT'. The identity comes from the body, not from the JWT; WebSecurityConfig.java:124 uses anyRequest().permitAll() and neither supporter endpoint is in the JWT filter list (spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/security/jwt/ACMAuthTokenFilter.java:42-49). There is no check that supportedBy equals the supporter assigned on the UserRole row or the logged-in user. In uat/prd the chain is WebSecurityConfig.java:167 (requestMatchers(\"/**\").permitAll())."
+  },
+  {
+   "step": "After approve/reject, the request disappears from the supporter list (page reload)",
+   "detail": "After a successful action, SupporterActionSaga.js:29 immediately dispatches viewSupporterApplicationList again, and the backend query only takes status PENDING (UserRoleService.java:254), so rows already SUPPORTED/REJECTED disappear. What happens is a re-fetch, not a full page reload. If the list becomes empty, the API throws NotExistsException (UserRoleService.java:256), which is handled as HTTP 200 with a string body (spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/exception/CustomControllerAdvice.java:27-30); ApproverSupporterList.js:6 treats string data as an empty list."
+  },
+  {
+   "step": "Email notification: approver after Supported, requester (admin) after Rejected",
+   "detail": "This step is in FSD 1.8 (BR-SA-003 and BR-SA-004, p.18) and in Functional Document 13.2/13.3. supporterUserRoleAction sends acm_approver.json to the approver email when the status is SUPPORTED (UserRoleService.java:330-331) and acm_admin.json to the email of the admin who created the request when REJECTED (UserRoleService.java:332-334). Actual email delivery cannot be verified from repo (depends on SMTP config per environment)."
+  },
+  {
+   "step": "On a retrieve/submit failure, staff sees a modal pop up with an error message",
+   "detail": "The interceptor axios.configuration.js:43-48 dispatches setApiErrorTrue for status 404/500 and setApiError400 for 400; ContentLayout.js:19 shows a 'Something went wrong' Modal with generic text (ContentLayout.js:11-15). A modal appears, but the message is generic, not specific. Other errors (for example 403) do not raise the modal, and the error state in ACMSupporterReducer.js:45-49 is not read by any component (grep GetSupporterListState)."
+  }
+ ]
+}

@@ -1,0 +1,77 @@
+{
+ "story": "ACM1.4",
+ "steps": [
+  {
+   "en": "Staff signs in and reaches the access control system",
+   "id": "Staff masuk dan sampai ke sistem kontrol akses",
+   "why_en": "Any user with system access can open the page by address; only the menu is role-specific",
+   "why_id": "User yang punya akses sistem bisa membuka halaman lewat alamat; hanya menu yang dibatasi role"
+  },
+  {
+   "en": "Only administrators see the Manage Roles menu",
+   "id": "Hanya administrator yang melihat menu Manage Roles",
+   "why_en": "Hidden only on screen; the system behind it does not check the role",
+   "why_id": "Hanya disembunyikan di layar; sistem di belakangnya tidak mengecek role"
+  },
+  {
+   "en": "Staff sees a table of all roles",
+   "id": "Staff melihat tabel semua role",
+   "why_en": "",
+   "why_id": ""
+  },
+  {
+   "en": "Staff can search roles by ID or name",
+   "id": "Staff bisa mencari role berdasarkan ID atau nama",
+   "why_en": "",
+   "why_id": ""
+  },
+  {
+   "en": "Staff can sort the role list by ID or name",
+   "id": "Staff bisa mengurutkan daftar role berdasarkan ID atau nama",
+   "why_en": "Only a fixed sort by name exists; users cannot click to sort",
+   "why_id": "Hanya ada urutan tetap berdasarkan nama; user tidak bisa klik untuk mengurutkan"
+  },
+  {
+   "en": "Staff can export the role list to a spreadsheet",
+   "id": "Staff bisa mengekspor daftar role ke spreadsheet",
+   "why_en": "",
+   "why_id": ""
+  },
+  {
+   "en": "Add New Role opens a form with all role fields",
+   "id": "Add New Role membuka form dengan semua field role",
+   "why_en": "The URL field in the spec is missing from the form",
+   "why_id": "Field URL di spesifikasi tidak ada di form"
+  },
+  {
+   "en": "Submitting the form saves the new role",
+   "id": "Submit form menyimpan role baru",
+   "why_en": "",
+   "why_id": ""
+  },
+  {
+   "en": "Editing a role changes only its description",
+   "id": "Edit role hanya mengubah deskripsinya",
+   "why_en": "Enforced only on screen; the system accepts a changed role name",
+   "why_id": "Hanya ditegakkan di layar; sistem menerima perubahan nama role"
+  },
+  {
+   "en": "Staff confirms in a pop-up before deleting a role",
+   "id": "Staff konfirmasi di pop-up sebelum menghapus role",
+   "why_en": "",
+   "why_id": ""
+  },
+  {
+   "en": "A role in use by users cannot be deleted and shows an error",
+   "id": "Role yang dipakai user tidak bisa dihapus dan muncul pesan error",
+   "why_en": "",
+   "why_id": ""
+  },
+  {
+   "en": "Staff sees an error pop-up if loading or saving fails",
+   "id": "Staff melihat pop-up error jika memuat atau menyimpan gagal",
+   "why_en": "The message is generic and hides the real cause such as a duplicate ID",
+   "why_id": "Pesannya generik dan menyembunyikan penyebab asli seperti ID duplikat"
+  }
+ ]
+}

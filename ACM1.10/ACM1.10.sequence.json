@@ -1,0 +1,159 @@
+{
+ "schema_version": 1,
+ "diagram_type": "sequence",
+ "meta": {
+  "title": "ACM1.10 Audit Trail",
+  "output": "docs/archify/ACM1.10/ACM1.10.sequence.html",
+  "locale": "en",
+  "viewBox": [
+   1080,
+   620
+  ],
+  "animation": "trace",
+  "quality_profile": "showcase",
+  "column_fit": "spread"
+ },
+ "participants": [
+  {
+   "id": "staff",
+   "type": "external",
+   "label": "Staff",
+   "sublabel": "AC-ADMIN"
+  },
+  {
+   "id": "web",
+   "type": "frontend",
+   "label": "Audit Trail page",
+   "sublabel": "React"
+  },
+  {
+   "id": "api",
+   "type": "backend",
+   "label": "Audit controller",
+   "sublabel": "/acm/v1/audit"
+  },
+  {
+   "id": "helper",
+   "type": "backend",
+   "label": "Enquiry helper",
+   "sublabel": "filter + enrich"
+  },
+  {
+   "id": "db",
+   "type": "database",
+   "label": "Transaction table",
+   "sublabel": "user-role history"
+  }
+ ],
+ "segments": [
+  {
+   "from": 150,
+   "to": 250,
+   "label": "Open + filter"
+  },
+  {
+   "from": 262,
+   "to": 450,
+   "label": "Search"
+  },
+  {
+   "from": 462,
+   "to": 532,
+   "label": "Show + export"
+  }
+ ],
+ "messages": [
+  {
+   "from": "staff",
+   "to": "web",
+   "y": 170,
+   "label": "open Audit Trail (menu)",
+   "variant": "emphasis"
+  },
+  {
+   "from": "staff",
+   "to": "web",
+   "y": 215,
+   "label": "Action, Staff, Feature, dates",
+   "variant": "default"
+  },
+  {
+   "from": "web",
+   "to": "api",
+   "y": 290,
+   "label": "POST /enquiry",
+   "variant": "emphasis"
+  },
+  {
+   "from": "api",
+   "to": "helper",
+   "y": 330,
+   "label": "validate + fetch",
+   "variant": "default"
+  },
+  {
+   "from": "helper",
+   "to": "db",
+   "y": 370,
+   "label": "by date and user",
+   "variant": "default"
+  },
+  {
+   "from": "db",
+   "to": "helper",
+   "y": 410,
+   "label": "rows",
+   "variant": "return"
+  },
+  {
+   "from": "helper",
+   "to": "api",
+   "y": 445,
+   "label": "filter Action; Feature unused",
+   "variant": "dashed"
+  },
+  {
+   "from": "api",
+   "to": "web",
+   "y": 485,
+   "label": "list (200)",
+   "variant": "return"
+  },
+  {
+   "from": "web",
+   "to": "staff",
+   "y": 515,
+   "label": "table of records",
+   "variant": "return"
+  }
+ ],
+ "cards": [
+  {
+   "dot": "emerald",
+   "title": "Matches the flow",
+   "items": [
+    "Filters: Action, Staff, dates",
+    "Search returns a table",
+    "Staff search needs 3+ characters"
+   ]
+  },
+  {
+   "dot": "rose",
+   "title": "Gaps",
+   "items": [
+    "Feature filter is not applied",
+    "Only user-role changes read",
+    "Export is CSV, no .xlsx"
+   ]
+  },
+  {
+   "dot": "orange",
+   "title": "To verify",
+   "items": [
+    "AC-ADMIN checked in menu only",
+    "roleId value in database",
+    "AAD login not in repo"
+   ]
+  }
+ ]
+}

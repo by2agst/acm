@@ -1,0 +1,118 @@
+{
+ "story": "ACM1.4",
+ "code_commit": "90482ed",
+ "flow_ref": "ACM_FSD _v1.2.pdf section 1.4 (hlm. 10-11, basic course + BR-MR-001..004) sebagai acuan utama; ACM_Functional_Document_v1.0.pdf bagian 9 (Role Setup) sebagai pelengkap. HCL_CAC.pptx hanya level tinggi, tidak memuat langkah Manage Roles.",
+ "code_summary": "Web: Containers/ACM/ManageRole (RoleTableView, RoleAddEdit) + Containers/ACM/index.js + Components/DataTable.js + Sagas/Roles. API: RoleController (/acm/v1/role/createRole, updateRole, viewRoles, deleteRole) -> RoleService -> RoleRepository (ACM_ROLE) dan UserRoleRepository untuk cek pemakaian.",
+ "note": "CRUD role berfungsi sesuai FSD untuk create, list, search, export, delete dengan cek user. Celah: aturan AC-ADMIN dan 'edit hanya description' hanya ditegakkan di UI, server tidak membatasi (WebSecurityConfig.java:167 permitAll, RoleService.java:75 menyimpan roleName); field URL ada di FSD tapi tidak ada di code; sort kolom oleh user tidak ada; pesan error generik. Ada potensi bug editId hardcoded 10 di DataTable.js:79. Login AAD dan nilai role AC-ADMIN di DB cannot verify from repo.",
+ "recommendation": "Klaim sebagian: langkah Sesuai boleh diklaim; langkah Sebagian (otorisasi server-side, edit description only di server, URL, sort kolom, pesan error) perlu perbaikan atau konfirmasi FSD sebelum diklaim penuh.",
+ "steps": [
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf",
+   "slide": "p.10 (1.4 basic course, step 1)",
+   "step": "Staff login to Staff Portal via AAD and land on ACM if user has an ACM role",
+   "repo": "spms_common_iz_web_app-main",
+   "code_ref": "spms_common_iz_web_app-main/src/Navigation/PrivateRouteConfig.js:27",
+   "fit": "Sebagian",
+   "detail": "Route guard /acm/manage-role (Navigation/RoutesConfig.js:136) hanya mengecek user punya akses application ACM (PrivateRouteConfig.js:27), bukan role AC-ADMIN secara spesifik; user ACM lain yang ketik URL langsung masih lolos guard UI. Login AAD sendiri tidak diverifikasi di langkah ini (token filter di spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/security/jwt/ACMAuthTokenFilter.java:74 hanya memuat authority dari DB). AAD flow: cannot verify from repo."
+  },
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf",
+   "slide": "p.10-11 (BR-MR-001)",
+   "step": "Menu Manage Roles hanya muncul untuk AC-ADMIN",
+   "repo": "spms_common_iz_web_app-main",
+   "code_ref": "spms_common_iz_web_app-main/src/Components/LayoutACM.js:51",
+   "fit": "Sebagian",
+   "detail": "Menu Manage Roles difilter di UI: ACM_MODULES_LIST (Utility/constant.js:15) punya accessRole 'AC-admin' dan LayoutACM.js:51 memakai roleList.includes() yang case-sensitive; FSD menulis AC-ADMIN, nilai role_id sebenarnya di DB cannot verify from repo. Di server tidak ada pengecekan AC-ADMIN: RoleController (acm/controller/RoleController.java:23) tanpa annotation role, dan WebSecurityConfig.java:167 memakai permitAll untuk /** (uat/prd) serta :124 (dev). Jadi aturan hanya ditegakkan di UI."
+  },
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf",
+   "slide": "p.10 (1.4 step 2)",
+   "step": "Memuat tabel role (Application ID, Role ID, Role Name) untuk semua role kecuali yang sudah dihapus",
+   "repo": "spms_common_iz_api_app-main",
+   "code_ref": "spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/service/RoleService.java:98",
+   "fit": "Sesuai",
+   "detail": "Alur: ACM/index.js:66 dispatch getRoleList -> Sagas/Roles/RolesSaga.js:13 POST acm/v1/role/viewRoles (Services/ServiceConfig.js:51) -> RoleController.java:42 -> RoleService.getRoles() findAll() di :98. Kolom tabel di Utility/constant.js:76 (Application ID, Role ID, Role Name, Action). Delete adalah hard delete (RoleService.java:126 removeByRoleId), jadi role terhapus memang tidak muncul."
+  },
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf",
+   "slide": "p.10 (1.4 step 2)",
+   "step": "Staff can search Role ID and Role Name",
+   "repo": "spms_common_iz_api_app-main",
+   "code_ref": "spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/service/RoleService.java:152",
+   "fit": "Sesuai",
+   "detail": "SearchBox 'Role Name, Role ID' (Containers/ACM/ManageRole/RoleTableView.js:50) -> handleSearch dispatch getRoleList({searchText}) (:34-35) -> RoleController.java:45-46 -> RoleService.getRolesByIdAndName :152 memakai findByRoleIdContainingOrRoleNameContaining (RoleRepository.java:19), pencarian contains."
+  },
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf",
+   "slide": "p.10 (1.4 step 2)",
+   "step": "Staff can sort Role ID and Role Name",
+   "repo": "spms_common_iz_web_app-main",
+   "code_ref": "spms_common_iz_web_app-main/src/Containers/ACM/index.js:291",
+   "fit": "Sebagian",
+   "detail": "Hanya ada sort default by roleName (sortObject(roleData,'roleName') di index.js:291, Packages/Common.js:50). Tidak ada kontrol sort yang bisa diklik user untuk kolom Role ID atau Role Name; tidak ditemukan handler sort di Components/DataTable.js."
+  },
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf",
+   "slide": "p.10 (1.4 step 2)",
+   "step": "Staff can export searched/filtered roles to Excel",
+   "repo": "spms_common_iz_web_app-main",
+   "code_ref": "spms_common_iz_web_app-main/src/Containers/ACM/ManageRole/RoleTableView.js:64",
+   "fit": "Sesuai",
+   "detail": "ExportToExcel (Components/ExportToExcel.js:3) membuat CSV 'Roles.csv' dari props.roleData, yaitu hasil list/search saat ini (semua halaman, bukan hanya halaman yang tampil), kolom APPLICATION_ID, ROLE_ID, ROLE_NAME, DESCRIPTION (RoleTableView.js:19-24). Format CSV, bukan .xlsx; dibuka di Excel."
+  },
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf; ACM_Functional_Document_v1.0.pdf",
+   "slide": "p.10 (1.4 step 3); ACM_Functional_Document_v1.0.pdf 9.1-9.2",
+   "step": "Add New Role membuka form: application, role name, role ID, URL, description (opsional)",
+   "repo": "spms_common_iz_web_app-main",
+   "code_ref": "spms_common_iz_web_app-main/src/Containers/ACM/ManageRole/RoleAddEdit.js:24",
+   "fit": "Sebagian",
+   "detail": "Tombol Add New Role di RoleTableView.js:61-63. Form punya Application (RoleAddEdit.js:24), Role Name maks 100 (:25), Role ID maks 10 (:26), Description opsional maks 200 (:27). Field URL yang disebut FSD tidak ada di form maupun di RoleCreateRequest.java; Functional Document 9.2 juga tidak mencantumkan URL. FSD menang, jadi Sebagian."
+  },
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf; ACM_Functional_Document_v1.0.pdf",
+   "slide": "p.10 (1.4 step 4); ACM_Functional_Document_v1.0.pdf 9.3",
+   "step": "Submit membuat role di DB",
+   "repo": "spms_common_iz_api_app-main",
+   "code_ref": "spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/service/RoleService.java:61",
+   "fit": "Sesuai",
+   "detail": "Alur: ACM/index.js:203 postRole -> Sagas/Roles/RolesPostSaga.js:13,16 (POST acm/v1/role/createRole) -> RoleController.java:30-33 (@Valid, 201) -> RoleService.createRole :61-70: tolak jika roleId sudah ada (ACMEntityAlreadyExistsException, -> 400 via CustomControllerAdvice.java:32-34), ambil Application, roleRepository.save (:67). Setelah sukses list dimuat ulang (RolesPostSaga.js:21-22). Catatan: batas panjang (nama 100, ID 10, deskripsi 200) hanya di UI (RoleAddEdit.js:25-27; roleValidation SechmaValidation.js:25-30); server hanya @NotBlank dan @Size(max=256) deskripsi (RoleCreateRequest.java:14-21). Cek duplikat per roleId global (RoleService.java:62), lebih ketat dari unique constraint application+role di Role.java:17-18."
+  },
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf",
+   "slide": "p.10-11 (1.4 step 5, BR-MR-002)",
+   "step": "Edit hanya mengizinkan description yang diubah",
+   "repo": "spms_common_iz_web_app-main",
+   "code_ref": "spms_common_iz_web_app-main/src/Containers/ACM/ManageRole/RoleAddEdit.js:24",
+   "fit": "Sebagian",
+   "detail": "UI: saat edit, Application, Role Name, Role ID di-disable (isDisable={!acmData.isNew}, RoleAddEdit.js:24-26), hanya Description bisa diubah. Server tidak membatasi: updateRole menerima dan menyimpan roleName baru (RoleService.java:75) dan description (:76), jadi BR-MR-002 hanya ditegakkan di UI. Ada bug terpisah: Components/DataTable.js:79 memakai editId = index + (currentPage-1)*10 dengan angka 10 hardcoded, padahal PageSize bisa diubah user (:43,:67); jika page size bukan 10 dan di halaman > 1, form edit bisa membuka role yang salah (dibaca dari roleData[editId], ACM/index.js:130). Dampak perlu verifikasi manual."
+  },
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf",
+   "slide": "p.10 (1.4 step 6)",
+   "step": "Staff clicks delete and confirms in modal pop-up",
+   "repo": "spms_common_iz_web_app-main",
+   "code_ref": "spms_common_iz_web_app-main/src/Components/DataTable.js:173",
+   "fit": "Sesuai",
+   "detail": "Ikon delete memanggil handleRemove (DataTable.js:402) yang membuka ConfirmModal (:173-176, render :243); setelah konfirmasi handleDelete dispatch deleteRole({roleId}) (:185-190) -> Sagas/Roles/DeleteRolesSaga.js:13 POST acm/v1/role/deleteRole -> RoleController.java:57-60."
+  },
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf",
+   "slide": "p.10-11 (1.4 step 6, BR-MR-004)",
+   "step": "Role hanya bisa dihapus jika tidak di-assign ke user mana pun, jika tidak muncul pop-up error untuk melepas assignment",
+   "repo": "spms_common_iz_api_app-main",
+   "code_ref": "spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/service/RoleService.java:123",
+   "fit": "Sesuai",
+   "detail": "RoleService.deleteRole: findByRole(userRole) di :123; jika kosong removeByRoleId (:125-126, code ACM200); jika masih dipakai user, tidak dihapus dan balik ACM500 dengan daftar user (:132-138). RoleTableView.js:26-27 membuka modal 'Delete Failed' dengan responseMsg (:40-46). Catatan: HTTP status tetap 200, error dibedakan lewat responseCode."
+  },
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf",
+   "slide": "p.10 (Exceptions)",
+   "step": "On retrieve/submit failure, staff sees modal with appropriate error message",
+   "repo": "spms_common_iz_web_app-main",
+   "code_ref": "spms_common_iz_web_app-main/src/Services/axios.configuration.js:43",
+   "fit": "Sebagian",
+   "detail": "Interceptor axios menyalakan modal global 'Something went wrong' (Components/ContentLayout.js:17-22) saat 404/500 (axios.configuration.js:43-44) atau 400 (:46-47). Pesan generik: untuk 400 teksnya 'unable to retrieve the record' (ContentLayout.js:13-14) walau kegagalannya saat submit/duplikat Role ID; pesan spesifik server (mis. 'Role already exists') tidak ditampilkan. Ada reducer ERROR_HANDLE_ROLE (Reducers/Roles/RolesReducer.js:31) tapi tidak ditemukan komponen role yang menampilkannya."
+  }
+ ]
+}

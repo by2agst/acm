@@ -1,0 +1,241 @@
+{
+  "schema_version": 1,
+  "diagram_type": "sequence",
+  "meta": {
+    "title": "ACM1.2 Manage Modules",
+    "output": "ACM1.2.sequence.html",
+    "viewBox": [
+      1080,
+      620
+    ],
+    "column_fit": "spread",
+    "animation": "trace",
+    "quality_profile": "showcase",
+    "locale": "en",
+    "views": [
+      {
+        "id": "list",
+        "label": "List and search",
+        "focus": [
+          "staff",
+          "web",
+          "api",
+          "db"
+        ],
+        "note": "List and search work; no sort control."
+      },
+      {
+        "id": "save",
+        "label": "Create and edit",
+        "focus": [
+          "staff",
+          "web",
+          "api",
+          "db"
+        ],
+        "note": "Edit is description-only only in the UI."
+      },
+      {
+        "id": "delete",
+        "label": "Delete",
+        "focus": [
+          "staff",
+          "web",
+          "api",
+          "db"
+        ],
+        "note": "Cascade removes functions, not roles."
+      }
+    ]
+  },
+  "participants": [
+    {
+      "id": "staff",
+      "type": "external",
+      "label": "Staff",
+      "sublabel": "AC-ADMIN"
+    },
+    {
+      "id": "web",
+      "type": "frontend",
+      "label": "Web App",
+      "sublabel": "React ACM"
+    },
+    {
+      "id": "api",
+      "type": "backend",
+      "label": "Module API",
+      "sublabel": "appmodule"
+    },
+    {
+      "id": "db",
+      "type": "database",
+      "label": "ACM DB",
+      "sublabel": "ACM_APPLICATION_MODULE"
+    }
+  ],
+  "segments": [
+    {
+      "from": 150,
+      "to": 270,
+      "label": "List + search"
+    },
+    {
+      "from": 280,
+      "to": 400,
+      "label": "Create + edit"
+    },
+    {
+      "from": 408,
+      "to": 525,
+      "label": "Delete"
+    }
+  ],
+  "messages": [
+    {
+      "id": "open",
+      "from": "staff",
+      "to": "web",
+      "y": 160,
+      "label": "open Manage Modules",
+      "variant": "default"
+    },
+    {
+      "id": "list",
+      "from": "web",
+      "to": "api",
+      "y": 192,
+      "label": "POST viewAllModules",
+      "variant": "emphasis"
+    },
+    {
+      "id": "q",
+      "from": "api",
+      "to": "db",
+      "y": 224,
+      "label": "findAll / search contains",
+      "variant": "default"
+    },
+    {
+      "id": "rows",
+      "from": "db",
+      "to": "api",
+      "y": 256,
+      "label": "rows",
+      "variant": "return"
+    },
+    {
+      "id": "resp",
+      "from": "api",
+      "to": "web",
+      "y": 288,
+      "label": "module list (no role check)",
+      "variant": "return"
+    },
+    {
+      "id": "form",
+      "from": "staff",
+      "to": "web",
+      "y": 320,
+      "label": "add / edit description",
+      "variant": "default"
+    },
+    {
+      "id": "save",
+      "from": "web",
+      "to": "api",
+      "y": 352,
+      "label": "createModule / updateModule",
+      "variant": "emphasis"
+    },
+    {
+      "id": "persist",
+      "from": "api",
+      "to": "db",
+      "y": 384,
+      "label": "save (name editable)",
+      "variant": "default"
+    },
+    {
+      "id": "del",
+      "from": "staff",
+      "to": "web",
+      "y": 416,
+      "label": "delete + confirm modal",
+      "variant": "default"
+    },
+    {
+      "id": "delreq",
+      "from": "web",
+      "to": "api",
+      "y": 448,
+      "label": "POST deleteModule",
+      "variant": "emphasis"
+    },
+    {
+      "id": "rm",
+      "from": "api",
+      "to": "db",
+      "y": 480,
+      "label": "remove + cascade functions",
+      "variant": "default"
+    },
+    {
+      "id": "ok",
+      "from": "api",
+      "to": "web",
+      "y": 512,
+      "label": "200 text (no error modal)",
+      "variant": "return"
+    }
+  ],
+  "activations": [
+    {
+      "participant": "web",
+      "from": 155,
+      "to": 517,
+      "type": "frontend"
+    },
+    {
+      "participant": "api",
+      "from": 187,
+      "to": 517,
+      "type": "backend"
+    },
+    {
+      "participant": "db",
+      "from": 219,
+      "to": 486,
+      "type": "database"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Matches flow",
+      "items": [
+        "List, search, add and delete confirm work",
+        "Create saves directly, no approval",
+        "Hard delete removes functions"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Gap",
+      "items": [
+        "No sort by Module ID / Name",
+        "API has no AC-ADMIN check",
+        "API still accepts a name change"
+      ]
+    },
+    {
+      "dot": "orange",
+      "title": "To verify",
+      "items": [
+        "Cascade relies on JPA derived delete",
+        "Role id AC-admin vs AC-ADMIN in DB",
+        "Export is CSV, error text is generic"
+      ]
+    }
+  ]
+}

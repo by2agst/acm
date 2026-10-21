@@ -1,0 +1,247 @@
+{
+ "schema_version": 1,
+ "diagram_type": "sequence",
+ "meta": {
+  "title": "ACM1.3 Manage User",
+  "output": "ACM1.3.id.sequence.html",
+  "viewBox": [
+   1080,
+   620
+  ],
+  "column_fit": "spread",
+  "animation": "trace",
+  "quality_profile": "showcase",
+  "views": [
+   {
+    "id": "list",
+    "label": "Daftar dan cari",
+    "focus": [
+     "staff",
+     "web",
+     "api",
+     "db"
+    ],
+    "note": "Daftar jalan; cari hanya via ID, tanpa sort."
+   },
+   {
+    "id": "add",
+    "label": "Tambah dari UIAM",
+    "focus": [
+     "staff",
+     "web",
+     "api",
+     "uiam",
+     "db"
+    ],
+    "note": "Tipe user bawaan ADMIN."
+   },
+   {
+    "id": "edit",
+    "label": "Edit dan hapus",
+    "focus": [
+     "staff",
+     "web",
+     "api",
+     "db"
+    ],
+    "note": "Delete hanya soft delete."
+   }
+  ]
+ },
+ "participants": [
+  {
+   "id": "staff",
+   "type": "external",
+   "label": "Staff",
+   "sublabel": "AC-ADMIN"
+  },
+  {
+   "id": "web",
+   "type": "frontend",
+   "label": "Web App",
+   "sublabel": "React ACM"
+  },
+  {
+   "id": "api",
+   "type": "backend",
+   "label": "User API",
+   "sublabel": "/acm/v1/user"
+  },
+  {
+   "id": "uiam",
+   "type": "database",
+   "label": "UIAM View",
+   "sublabel": "v_uiam2_all_staff"
+  },
+  {
+   "id": "db",
+   "type": "database",
+   "label": "ACM DB",
+   "sublabel": "ACM_USER"
+  }
+ ],
+ "segments": [
+  {
+   "from": 150,
+   "to": 270,
+   "label": "Daftar + cari"
+  },
+  {
+   "from": 280,
+   "to": 400,
+   "label": "Tambah user"
+  },
+  {
+   "from": 408,
+   "to": 525,
+   "label": "Edit + hapus"
+  }
+ ],
+ "messages": [
+  {
+   "id": "m0",
+   "from": "staff",
+   "to": "web",
+   "y": 160,
+   "label": "buka Manage User",
+   "variant": "default"
+  },
+  {
+   "id": "m1",
+   "from": "web",
+   "to": "api",
+   "y": 192,
+   "label": "POST viewAllUsers",
+   "variant": "emphasis"
+  },
+  {
+   "id": "m2",
+   "from": "api",
+   "to": "db",
+   "y": 224,
+   "label": "user ACTIVE urut userId",
+   "variant": "default"
+  },
+  {
+   "id": "m3",
+   "from": "staff",
+   "to": "web",
+   "y": 256,
+   "label": "tab Add User, cari",
+   "variant": "default"
+  },
+  {
+   "id": "m4",
+   "from": "web",
+   "to": "api",
+   "y": 288,
+   "label": "daftar UIAM (search difilter di web)",
+   "variant": "emphasis"
+  },
+  {
+   "id": "m5",
+   "from": "api",
+   "to": "uiam",
+   "y": 320,
+   "label": "baca view staff UIAM",
+   "variant": "default"
+  },
+  {
+   "id": "m6",
+   "from": "web",
+   "to": "api",
+   "y": 352,
+   "label": "createUser + tipe user",
+   "variant": "emphasis"
+  },
+  {
+   "id": "m7",
+   "from": "api",
+   "to": "db",
+   "y": 384,
+   "label": "simpan baris ACTIVE, tanpa approval",
+   "variant": "default"
+  },
+  {
+   "id": "m8",
+   "from": "staff",
+   "to": "web",
+   "y": 416,
+   "label": "edit mobile / delete + konfirmasi",
+   "variant": "default"
+  },
+  {
+   "id": "m9",
+   "from": "web",
+   "to": "api",
+   "y": 448,
+   "label": "updateUser / deleteUser",
+   "variant": "emphasis"
+  },
+  {
+   "id": "m10",
+   "from": "api",
+   "to": "db",
+   "y": 480,
+   "label": "ubah phone / set INACTIVE",
+   "variant": "default"
+  },
+  {
+   "id": "m11",
+   "from": "api",
+   "to": "web",
+   "y": 512,
+   "label": "200 teks (error generik)",
+   "variant": "return"
+  }
+ ],
+ "activations": [
+  {
+   "participant": "web",
+   "from": 155,
+   "to": 517,
+   "type": "frontend"
+  },
+  {
+   "participant": "api",
+   "from": 187,
+   "to": 517,
+   "type": "backend"
+  },
+  {
+   "participant": "db",
+   "from": 219,
+   "to": 486,
+   "type": "database"
+  }
+ ],
+ "cards": [
+  {
+   "dot": "emerald",
+   "title": "Sesuai flow",
+   "items": [
+    "Daftar user aktif 6 kolom",
+    "Tambah dari UIAM, tanpa approval",
+    "Edit hanya ubah mobile"
+   ]
+  },
+  {
+   "dot": "rose",
+   "title": "Gap",
+   "items": [
+    "API tanpa cek AC-ADMIN",
+    "Tanpa sort; cari Name tidak ada",
+    "Delete soft; export CSV"
+   ]
+  },
+  {
+   "dot": "orange",
+   "title": "Perlu verifikasi",
+   "items": [
+    "Isi view UIAM",
+    "Default ADMIN vs dropdown tampil",
+    "Modal error di browser"
+   ]
+  }
+ ]
+}

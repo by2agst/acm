@@ -1,0 +1,109 @@
+{
+ "story": "ACM1.3",
+ "code_commit": "90482ed",
+ "flow_ref": "ACM_FSD _v1.2.pdf sec. 1.3 (p.8-9, wins); ACM_Functional_Document_v1.0.pdf sec. 11 User Registration (p.14); HCL_CAC.pptx (high-level images only, not module-specific; later decks unknown)",
+ "code_summary": "Web (React): spms_common_iz_web_app-main/src/Containers/ACM/ManageUser/UserList.js, spms_common_iz_web_app-main/src/Components/DataTable.js, spms_common_iz_web_app-main/src/Components/ConfirmModal.js, spms_common_iz_web_app-main/src/Sagas/ManageUser/*, spms_common_iz_web_app-main/src/Components/ExportToExcel.js. API (iz): spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/controller/UserController.java -> spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/service/UserService.java -> UserRepository -> table ACM_USER; UIAM list via spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/controller/UIAMInterfaceController.java -> spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/service/UIAMInterfaceService.java -> view v_uiam2_all_staff. Not in external API (spms_common_ez_api_app-main not traced for user CRUD).",
+ "note": "Dibandingkan dengan ACM_FSD _v1.2.pdf sec. 1.3 (menang bila deck berbeda). Hasil sudah dicek ke kode; isi view UIAM, data ACM_USER, dan tampilan modal di browser tidak bisa diverifikasi dari repo. Login AAD (langkah pertama FSD) tidak ditelusuri di sini. HCL_CAC.pptx hanya gambar tingkat tinggi, tidak dipakai sebagai bukti langkah.",
+ "recommendation": "Klaim sebagian: list ACTIVE, Add User dari UIAM, tambah tanpa approval, edit mobile saja, dan konfirmasi delete berjalan. Perbaiki sebelum klaim penuh: cek AC-ADMIN di API, sort per kolom, pencarian Name di tab Remove/Edit, export .xlsx, default user type ADMIN, delete sebenarnya soft delete, dan pesan error spesifik.",
+ "steps": [
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf",
+   "slide": "FSD p.8-9 (BR-MU-001)",
+   "step": "Hanya Staff dengan role AC-ADMIN yang bisa mengakses Manage User",
+   "repo": "spms_common_iz_web_app-main",
+   "code_ref": "spms_common_iz_web_app-main/src/Components/LayoutACM.js:51",
+   "fit": "Sebagian",
+   "detail": "Pembatasan hanya ada di UI: menu Manage User (optionValue 'MU') punya accessRole 'AC-admin' (spms_common_iz_web_app-main/src/Utility/constant.js:14) dan hanya ditampilkan bila role user di application ACM cocok (spms_common_iz_web_app-main/src/Components/LayoutACM.js:51). Route /acm/manage-user (spms_common_iz_web_app-main/src/Navigation/RoutesConfig.js:164) memakai PrivateRouteACMConfig yang hanya mengecek user punya application ACM (tidak diverifikasi per role di kode ini; sama seperti ACM1.2). Di API, spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/controller/UserController.java:23-93 tidak punya cek role, spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/security/WebSecurityConfig.java:124 dan :167 membuka request dengan permitAll(), dan spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/security/jwt/ACMAuthTokenFilter.java:42-51 hanya melindungi 8 path allowlist (bukan /acm/v1/user/**). Jadi endpoint createUser/updateUser/deleteUser tidak punya cek AC-ADMIN di server. Login AAD tidak diperiksa di story ini."
+  },
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf",
+   "slide": "FSD p.8 (basic course, step 2)",
+   "step": "Staff memilih Manage User dan melihat daftar user ACTIVE (URAMS ID, Name, Department, Designation, Email, Mobile)",
+   "repo": "spms_common_iz_web_app-main",
+   "code_ref": "spms_common_iz_web_app-main/src/Containers/ACM/ManageUser/UserList.js:42",
+   "fit": "Sesuai",
+   "detail": "Tab 'Remove / Edit User' memanggil getAcmUser dengan userId kosong (spms_common_iz_web_app-main/src/Containers/ACM/ManageUser/UserList.js:42), saga memilih endpoint viewAllUsers (spms_common_iz_web_app-main/src/Sagas/ManageUser/AcmUserSaga.js:16-24) -> spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/controller/UserController.java:51-55 -> spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/service/UserService.java:123-131 yang memanggil findByStatusOrderByUserIdAsc(ACTIVE), jadi hanya user ACTIVE, urut URAMS ID. Kolom tabel: URAMS ID, Name, Department, Designation, Email, Mobile (spms_common_iz_web_app-main/src/Utility/constant.js:103-111, baris di spms_common_iz_web_app-main/src/Components/DataTable.js:418-440). Data yang tampil dari DB tidak bisa diverifikasi dari repo."
+  },
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf",
+   "slide": "FSD p.8 (basic course, step 2)",
+   "step": "Staff bisa mencari berdasarkan URAMS ID dan Name",
+   "repo": "spms_common_iz_web_app-main",
+   "code_ref": "spms_common_iz_web_app-main/src/Sagas/ManageUser/AcmUserSaga.js:16",
+   "fit": "Sebagian",
+   "detail": "Kotak pencarian di tab Remove/Edit hanya berlabel 'URAMS ID' (spms_common_iz_web_app-main/src/Containers/ACM/ManageUser/UserList.js:95). Teks yang diisi dikirim sebagai userId ke viewByUser (spms_common_iz_web_app-main/src/Sagas/ManageUser/AcmUserSaga.js:16-19) -> spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/controller/UserController.java:45-49 -> spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/service/UserService.java:114-121 yang mencari persis userId (findByUserIdAndStatusIn ACTIVE). Pencarian Name tidak jalan di tab ini, dan bila tidak ada hasil, NotExistsException dikembalikan HTTP 200 berisi teks (spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/exception/CustomControllerAdvice.java:27-30), bukan daftar kosong. Endpoint pencarian 'contains' ada di API (spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/service/UserService.java:231-243, menyertakan user INACTIVE karena tidak memfilter status) tetapi tidak dipakai oleh jalur pencarian web ini. Pencarian di tab Add User (UIAM) mendukung Name dan URAMS ID, lihat langkah 6."
+  },
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf",
+   "slide": "FSD p.8 (basic course, step 2)",
+   "step": "Staff bisa mengurutkan (sort) kolom URAMS ID dan Name",
+   "repo": "spms_common_iz_web_app-main",
+   "code_ref": "spms_common_iz_web_app-main/src/Components/DataTable.js:259",
+   "fit": "Tidak ada code",
+   "detail": "Header tabel hanya merender teks kolom tanpa handler klik/sort (spms_common_iz_web_app-main/src/Components/DataTable.js:259-274); spms_common_iz_web_app-main/src/Containers/ACM/ManageUser/UserList.js tidak punya state atau parameter sort. Satu-satunya urutan adalah ORDER BY userId ASC dari API (spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/service/UserService.java:124), tidak bisa diubah user. Sama seperti sibling story (tidak ada sort oleh user)."
+  },
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf",
+   "slide": "FSD p.8 (basic course, step 2)",
+   "step": "Staff bisa export semua data hasil search/filter ke Excel",
+   "repo": "spms_common_iz_web_app-main",
+   "code_ref": "spms_common_iz_web_app-main/src/Containers/ACM/ManageUser/UserList.js:115",
+   "fit": "Sebagian",
+   "detail": "Tombol 'Export to Excel' ada (spms_common_iz_web_app-main/src/Containers/ACM/ManageUser/UserList.js:115, spms_common_iz_web_app-main/src/Components/ExportToExcel.js:8-15) dan mengekspor seluruh props.userData (bukan hanya halaman aktif), jadi hasil search ikut terekspor. Tetapi formatnya CSV ('Users.csv', pustaka react-csv), bukan file Excel .xlsx. Tombol juga muncul di tab Add User dan mengekspor data UIAM di sana, bukan data user ACM."
+  },
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf",
+   "slide": "FSD p.8 (basic course, step 3); FD sec. 11.1-11.2 p.14",
+   "step": "Staff membuka 'Add Users' dan sistem memuat data user dari UIAM, bisa dicari lewat Name atau URAMS ID",
+   "repo": "spms_common_iz_web_app-main",
+   "code_ref": "spms_common_iz_web_app-main/src/Containers/ACM/ManageUser/UserList.js:43",
+   "fit": "Sesuai",
+   "detail": "Tab 'Add User' memanggil getUiamsUser (spms_common_iz_web_app-main/src/Containers/ACM/ManageUser/UserList.js:43) -> spms_common_iz_web_app-main/src/Services/ServiceConfig.js:41 -> spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/controller/UIAMInterfaceController.java:27-31 -> spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/service/UIAMInterfaceService.java:46-56 membaca view v_uiam2_all_staff (spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/entities/Uiam2AllStaffView.java:17), urut userId. Pencarian dilakukan di sisi web: spms_common_iz_web_app-main/src/Sagas/ManageUser/UserSearchSaga.js:27-34 memfilter userId atau fullName (contains, case-insensitive); placeholder 'Name, URAMS ID (New User)' (spms_common_iz_web_app-main/src/Containers/ACM/ManageUser/UserList.js:95). Tombol tambah dinonaktifkan bila delInd bukan 'A' (spms_common_iz_web_app-main/src/Components/DataTable.js:458), jadi staff non-aktif di UIAM tidak bisa ditambahkan. Isi view UIAM tidak bisa diverifikasi dari repo."
+  },
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf",
+   "slide": "FSD p.8 (basic course, step 3); FD sec. 11.3 p.14; BR-MU-003 addendum p.9 (create new administrators)",
+   "step": "Staff menekan tombol tambah dan memilih user type (admin, approver, supporter, user), termasuk admin baru",
+   "repo": "spms_common_iz_web_app-main",
+   "code_ref": "spms_common_iz_web_app-main/src/Components/ConfirmModal.js:166",
+   "fit": "Sebagian",
+   "detail": "Klik ikon plus (spms_common_iz_web_app-main/src/Components/DataTable.js:210-215) membuka modal konfirmasi dengan dropdown 'User Type' (spms_common_iz_web_app-main/src/Components/ConfirmModal.js:160-173). Opsi diambil dari API viewAllUserType (spms_common_iz_web_app-main/src/Components/ConfirmModal.js:130, spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/controller/UserController.java:87-91) yang membaca ADMIN, APPROVER, SUPPORTER, USER dari spms_common_iz_api_app-main/src/main/resources/application.yml:122-127, jadi admin baru bisa dibuat. Tetapi nilai yang dikirim berasal dari state Redux selectedUserRole dengan default 'ADMIN' (spms_common_iz_web_app-main/src/Reducers/ManageUser/index.js:9), yang hanya berubah saat dropdown di-onChange (spms_common_iz_web_app-main/src/Components/ConfirmModal.js:145-147) dan tidak di-reset. Dropdown tidak terikat ke state (uncontrolled, ConfirmModal.js:166); setelah komponen di-mount ulang (mis. setelah Edit atau Delete) dropdown kembali menampilkan opsi pertama sementara state masih tipe lama; perilaku di browser tidak diverifikasi. Selain itu bila staff langsung menekan Yes tanpa memilih, tipe yang tersimpan adalah ADMIN (tipe paling berhak) padahal FD sec. 11.3 menyarankan 'User' untuk user biasa."
+  },
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf",
+   "slide": "FSD p.8 (basic course, step 4)",
+   "step": "Staff menekan Submit/Yes dan backend menambah user ke SPMS DB tanpa approval",
+   "repo": "spms_common_iz_api_app-main",
+   "code_ref": "spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/service/UserService.java:85",
+   "fit": "Sesuai",
+   "detail": "Yes memanggil postUser (spms_common_iz_web_app-main/src/Containers/ACM/ManageUser/UserList.js:65-79; userType dari state, status 'ACTIVE', phoneNumber dikirim kosong) -> spms_common_iz_web_app-main/src/Sagas/ManageUser/AddUserSaga.js:22-30 -> spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/controller/UserController.java:31-36 (201 Created) -> spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/service/UserService.java:85-99 yang menyimpan baris baru ke ACM_USER (spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/entities/User.java:18). Bila user sudah ACTIVE, ACMEntityAlreadyExistsException -> HTTP 400 (spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/exception/CustomControllerAdvice.java:32-35); bila INACTIVE, user diaktifkan lagi dengan tipe baru. Tidak ada langkah approval. Setelah sukses daftar dimuat ulang dan tab pindah ke Remove/Edit (spms_common_iz_web_app-main/src/Sagas/ManageUser/AddUserSaga.js:32-43). Nomor HP awal selalu kosong, harus diisi lewat edit."
+  },
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf",
+   "slide": "FSD p.8 (basic course, step 5); BR-MU-002 p.9",
+   "step": "Staff menekan edit dan hanya nomor mobile yang bisa diubah",
+   "repo": "spms_common_iz_api_app-main",
+   "code_ref": "spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/service/UserService.java:101",
+   "fit": "Sesuai",
+   "detail": "Ikon edit (spms_common_iz_web_app-main/src/Components/DataTable.js:202-208) membuka modal 'Update Mobile' dengan satu field phoneNumber (spms_common_iz_web_app-main/src/Components/ConfirmModal.js:59-96, validasi Yup di spms_common_iz_web_app-main/src/Containers/ACM/SechmaValidation.js:44-45). Request updateUser (spms_common_iz_web_app-main/src/Sagas/ManageUser/UpdateUserSaga.js:21-29) -> spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/controller/UserController.java:38-43; DTO spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/dto/UserUpdateRequest.java hanya berisi userId dan phoneNumber (regex nomor Singapura spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/constants/AcmConstants.java:31), dan spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/service/UserService.java:101-112 hanya men-set phoneNumber, updatedBy, updatedDate. Jadi field lain tidak bisa diubah, baik lewat UI maupun API. Tidak ada approval."
+  },
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf",
+   "slide": "FSD p.8 (basic course, step 6); BR-MU-003 p.9",
+   "step": "Staff menekan delete dan user dihapus dari SPMS DB setelah konfirmasi modal",
+   "repo": "spms_common_iz_api_app-main",
+   "code_ref": "spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/service/UserService.java:133",
+   "fit": "Sebagian",
+   "detail": "Ikon delete (spms_common_iz_web_app-main/src/Components/DataTable.js:173-176) membuka modal konfirmasi (spms_common_iz_web_app-main/src/Components/ConfirmModal.js:98-110); setelah Yes, deleteUser (spms_common_iz_web_app-main/src/Components/DataTable.js:191) -> spms_common_iz_web_app-main/src/Sagas/ManageUser/DeleteUserSaga.js:21-29 -> spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/controller/UserController.java:61-66 -> spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/service/UserService.java:133-149. Konfirmasi ada dan berjalan. Tetapi yang terjadi adalah soft delete: status user diubah ke INACTIVE (baris tetap ada di ACM_USER, spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/service/UserService.java:138), sedangkan baris role user dihapus permanen (spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/service/UserService.java:142-143). BR-MU-003 menulis 'remove the user from SPMS DB'; baris tidak benar-benar dihapus. Daftar dimuat ulang tanpa user itu karena hanya ACTIVE yang tampil."
+  },
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf",
+   "slide": "FSD p.8 (Exceptions)",
+   "step": "Bila ada masalah saat ambil/kirim data, Staff melihat modal pop-up dengan pesan error yang sesuai",
+   "repo": "spms_common_iz_web_app-main",
+   "code_ref": "spms_common_iz_web_app-main/src/Services/axios.configuration.js:43",
+   "fit": "Sebagian",
+   "detail": "Ada penanganan error global, bukan khusus Manage User: respons 404/500 menyalakan flag (spms_common_iz_web_app-main/src/Services/axios.configuration.js:43-47) dan 400 menyalakan flag lain (baris yang sama), lalu spms_common_iz_web_app-main/src/Components/ContentLayout.js:11-15 menampilkan teks umum 'We are unable to display the requested page...' atau 'unable to retrieve the record...'. Pesan spesifik dari API (mis. 'User already exists' dari spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/service/UserService.java:89) tidak ditampilkan. Selain itu NotExistsException dikembalikan HTTP 200 (spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/exception/CustomControllerAdvice.java:27-30), jadi kegagalan seperti update/delete user yang tidak ada tidak memicu modal error. Saga hanya menyimpan error ke state (errorUser, spms_common_iz_web_app-main/src/Reducers/ManageUser/index.js:45-50) tanpa pesan ke layar. Tampilan modal tidak diperiksa di browser."
+  }
+ ]
+}

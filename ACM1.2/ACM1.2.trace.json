@@ -1,0 +1,118 @@
+{
+ "story": "ACM1.2",
+ "code_commit": "90482ed",
+ "flow_ref": "ACM_FSD _v1.2.pdf sec. 1.2 (p.6-7, wins); ACM_Functional_Document_v1.0.pdf sec. 7 (p.8-9); HCL_CAC.pptx (high-level only, not module-specific)",
+ "code_summary": "Web (React): spms_common_iz_web_app-main/src/Containers/ACM/ManageModule/ModuleTableView.js, spms_common_iz_web_app-main/src/Containers/ACM/ManageModule/ModuleAddEdit.js, spms_common_iz_web_app-main/src/Components/DataTable.js, spms_common_iz_web_app-main/src/Sagas/Module/*. API (iz): spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/controller/ApplicationModuleController.java -> spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/service/ApplicationModuleService.java -> ApplicationModuleRepository -> table ACM_APPLICATION_MODULE. Not in external API (spms_common_ez_api_app-main has no module endpoint found).",
+ "note": "Dibandingkan dengan ACM_FSD _v1.2.pdf sec. 1.2 (menang bila deck berbeda). Hasil sudah dicek ke kode; perilaku DB (FK, nilai roleId) tidak bisa diverifikasi dari repo. HCL_CAC.pptx hanya gambar tingkat tinggi, tidak dipakai sebagai bukti langkah.",
+ "recommendation": "Klaim sebagian: list, search, add, delete, konfirmasi dan no-approval berjalan. Perbaiki sebelum klaim penuh: sort per kolom, role AC-ADMIN di API, edit hanya description di API, pesan error spesifik.",
+ "steps": [
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf",
+   "slide": "FSD p.6 (Notes), p.7 (BR-MM-001)",
+   "step": "Hanya Staff dengan role AC-ADMIN yang bisa mengakses Manage Modules",
+   "repo": "spms_common_iz_web_app-main",
+   "code_ref": "spms_common_iz_web_app-main/src/Components/LayoutACM.js:51",
+   "fit": "Sebagian",
+   "detail": "Pembatasan hanya ada di UI: menu Manage Modules muncul bila role user di application ACM sama dengan 'AC-admin' (spms_common_iz_web_app-main/src/Utility/constant.js:13, spms_common_iz_web_app-main/src/Components/LayoutACM.js:51). Route /acm/manage-module (spms_common_iz_web_app-main/src/Navigation/RoutesConfig.js:129) hanya mengecek user punya application ACM apa saja (spms_common_iz_web_app-main/src/Navigation/PrivateRouteConfig.js:16, :27), bukan AC-ADMIN. Di API, spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/controller/ApplicationModuleController.java:21-60 tidak punya cek role dan spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/security/WebSecurityConfig.java:167 membuka '/**' dengan permitAll(), jadi endpoint module bisa dipanggil tanpa role AC-ADMIN. Penulisan 'AC-admin' di UI vs 'AC-ADMIN' di FSD: nilai roleId di database tidak bisa diverifikasi dari repo. Login AAD dan landing page bukan bagian trace story ini."
+  },
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf",
+   "slide": "FSD p.6",
+   "step": "Staff memilih Manage Modules; sistem menampilkan Application ID, Module ID, Module Name semua module",
+   "repo": "spms_common_iz_web_app-main",
+   "code_ref": "spms_common_iz_web_app-main/src/Containers/ACM/ManageModule/ModuleTableView.js:29",
+   "fit": "Sesuai",
+   "detail": "Saat Manage Modules dipilih, spms_common_iz_web_app-main/src/Containers/ACM/index.js:65 memanggil getModule, saga spms_common_iz_web_app-main/src/Sagas/Module/ModuleGetSaga.js:17 mengirim POST ke viewAllModules, lalu spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/controller/ApplicationModuleController.java:41-48 memanggil spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/service/ApplicationModuleService.java:94-100 (findAll). Tabel spms_common_iz_web_app-main/src/Containers/ACM/ManageModule/ModuleTableView.js:29-35 memakai header 'Application ID', 'Module ID', 'Module Name', 'Action' (spms_common_iz_web_app-main/src/Utility/constant.js:75). Delete adalah hard delete (tidak ada kolom status di spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/entities/ApplicationModule.java:19-55), jadi 'semua status kecuali deleted' sama dengan semua baris."
+  },
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf",
+   "slide": "FSD p.6",
+   "step": "Staff bisa mencari berdasarkan Module ID dan Module Name",
+   "repo": "spms_common_iz_web_app-main",
+   "code_ref": "spms_common_iz_web_app-main/src/Containers/ACM/ManageModule/ModuleTableView.js:26",
+   "fit": "Sesuai",
+   "detail": "Kotak pencarian spms_common_iz_web_app-main/src/Containers/ACM/ManageModule/ModuleTableView.js:26 memanggil getModule dengan searchText (spms_common_iz_web_app-main/src/Containers/ACM/ManageModule/ModuleTableView.js:14-16). spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/controller/ApplicationModuleController.java:44-45 meneruskan ke spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/service/ApplicationModuleService.java:124-130, yang memakai query findByModuleIdContainingOrModuleNameContaining (spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/repository/ApplicationModuleRepository.java:27). Catatan: spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/controller/ApplicationModuleController.java:44 membaca request.getSearchText() padahal body required=false, jadi body kosong akan NullPointerException; UI selalu mengirim body."
+  },
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf",
+   "slide": "FSD p.6",
+   "step": "Staff bisa mengurutkan (sort) kolom Module ID dan Module Name",
+   "repo": "spms_common_iz_web_app-main",
+   "code_ref": "spms_common_iz_web_app-main/src/Containers/ACM/index.js:286",
+   "fit": "Tidak ada code",
+   "detail": "Tidak ada kontrol sort di tabel. Daftar selalu diurutkan tetap berdasarkan moduleName lewat sortObject (spms_common_iz_web_app-main/src/Containers/ACM/index.js:286, spms_common_iz_web_app-main/src/Packages/Common.js:50-55); spms_common_iz_web_app-main/src/Components/DataTable.js:310-350 (tabel Module) tidak punya handler sort dan header tabel hanya teks. Sort oleh user pada Module ID atau Module Name tidak ada."
+  },
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf",
+   "slide": "FSD p.6",
+   "step": "Staff bisa mengekspor data hasil pencarian ke Excel",
+   "repo": "spms_common_iz_web_app-main",
+   "code_ref": "spms_common_iz_web_app-main/src/Containers/ACM/ManageModule/ModuleTableView.js:40",
+   "fit": "Sebagian",
+   "detail": "Tombol export spms_common_iz_web_app-main/src/Containers/ACM/ManageModule/ModuleTableView.js:40 memakai ExportToExcel (spms_common_iz_web_app-main/src/Components/ExportToExcel.js:2, :8) dengan data yang sedang dimuat (moduleData, yaitu hasil pencarian terakhir) dan kolom APPLICATION_ID, MODULE_ID, MODULE_NAME, DESCRIPTION (spms_common_iz_web_app-main/src/Containers/ACM/ManageModule/ModuleTableView.js:17-22). Hasilnya file CSV 'Modules.csv' lewat react-csv, bukan file Excel (.xlsx)."
+  },
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf",
+   "slide": "FSD p.6; ACM_Functional_Document_v1.0.pdf p.8-9",
+   "step": "Tombol Add New Module membuka form: application, module name, module ID, description (opsional)",
+   "repo": "spms_common_iz_web_app-main",
+   "code_ref": "spms_common_iz_web_app-main/src/Containers/ACM/ManageModule/ModuleAddEdit.js:24",
+   "fit": "Sesuai",
+   "detail": "Tombol 'Add New Module' (spms_common_iz_web_app-main/src/Containers/ACM/ManageModule/ModuleTableView.js:11-13, :37) membuka form spms_common_iz_web_app-main/src/Containers/ACM/ManageModule/ModuleAddEdit.js:24-27 dengan dropdown application, Module Name, Module ID (maxlength 100) dan Description opsional (maxlength 200), sesuai batas di ACM_Functional_Document_v1.0.pdf p.9. Validasi form di spms_common_iz_web_app-main/src/Containers/ACM/SechmaValidation.js:19-24 (application wajib, ID dan name wajib, description max 200)."
+  },
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf",
+   "slide": "FSD p.6",
+   "step": "Submit mengirim request ke backend yang membuat module di database",
+   "repo": "spms_common_iz_api_app-main",
+   "code_ref": "spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/service/ApplicationModuleService.java:59",
+   "fit": "Sesuai",
+   "detail": "Submit memanggil postModule dengan payload create (spms_common_iz_web_app-main/src/Containers/ACM/index.js:170-184), saga spms_common_iz_web_app-main/src/Sagas/Module/ModuleSaga.js:17-27 mengirim POST ke createModule, spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/controller/ApplicationModuleController.java:29-33 memanggil spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/service/ApplicationModuleService.java:59-69: cek findByModuleId, bila belum ada ambil application lalu appModuleRepository.save ke tabel ACM_APPLICATION_MODULE (spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/entities/ApplicationModule.java:17-18). Catatan: cek duplikat memakai moduleId saja di semua application (spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/service/ApplicationModuleService.java:60), sedangkan unique constraint hanya terlihat di entity JPA (ApplicationModule.java:17-18, per APPLICATION_ID dan MODULE_ID); constraint DB asli tidak bisa diverifikasi dari repo. API hanya @NotBlank untuk name/ID (spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/dto/ModuleCreateRequest.java:14-19), batas 100 karakter dari FD hanya di UI; description API max 256 (spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/dto/ModuleCreateRequest.java:20) vs 200 di UI."
+  },
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf",
+   "slide": "FSD p.6-7 (BR-MM-002)",
+   "step": "Saat edit, Staff hanya boleh mengubah description",
+   "repo": "spms_common_iz_api_app-main",
+   "code_ref": "spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/service/ApplicationModuleService.java:74",
+   "fit": "Sebagian",
+   "detail": "UI sudah benar: pada mode edit dropdown application, Module Name dan Module ID di-disable (spms_common_iz_web_app-main/src/Containers/ACM/ManageModule/ModuleAddEdit.js:24-26) dan hanya Description yang bisa diubah. Tetapi payload edit tetap mengirim moduleName (spms_common_iz_web_app-main/src/Containers/ACM/index.js:175-182) dan API menyimpannya: spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/service/ApplicationModuleService.java:74 setModuleName dan :75 setDescription, DTO spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/dto/ModuleUpdateRequest.java:16-18. Jadi aturan 'description saja' hanya dijaga di UI; request langsung ke API bisa mengganti Module Name. ACM_Functional_Document_v1.0.pdf p.9 juga menyebut Module Name tidak bisa diubah setelah dibuat."
+  },
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf",
+   "slide": "FSD p.6",
+   "step": "Klik delete menampilkan modal konfirmasi, lalu module dihapus",
+   "repo": "spms_common_iz_api_app-main",
+   "code_ref": "spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/service/ApplicationModuleService.java:110",
+   "fit": "Sesuai",
+   "detail": "Ikon delete di baris Module (spms_common_iz_web_app-main/src/Components/DataTable.js:310 dst) memanggil handleRemove (spms_common_iz_web_app-main/src/Components/DataTable.js:173-183) yang membuka modal konfirmasi (spms_common_iz_web_app-main/src/Components/ConfirmModal.js:24, :98-117). Tombol konfirmasi memanggil handleDelete (spms_common_iz_web_app-main/src/Components/DataTable.js:185-189) -> deleteModule, saga spms_common_iz_web_app-main/src/Sagas/Module/DeleteModuleSaga.js:18-27 -> POST deleteModule, spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/controller/ApplicationModuleController.java:56-60 -> spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/service/ApplicationModuleService.java:110-118 (cek ada, lalu removeByModuleId). Setelah sukses daftar dimuat ulang (spms_common_iz_web_app-main/src/Sagas/Module/DeleteModuleSaga.js:28)."
+  },
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf",
+   "slide": "FSD p.7 (BR-MM-004)",
+   "step": "Hapus module otomatis menghapus semua role dan function terkait",
+   "repo": "spms_common_iz_api_app-main",
+   "code_ref": "spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/entities/ApplicationModule.java:53",
+   "fit": "Sebagian",
+   "detail": "Yang ikut terhapus adalah Function milik module (spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/entities/ApplicationModule.java:53 cascade ALL + orphanRemoval) dan RoleFunction milik function itu (spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/entities/Function.java:42). Role sendiri terhubung ke application, bukan ke module (spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/entities/Role.java:35), jadi baris Role tidak dihapus; hanya mapping role-function yang hilang. Cascade bergantung pada derived delete removeByModuleId (spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/repository/ApplicationModuleRepository.java:23) yang memuat entity dulu; perilaku ini belum diuji di repo, perlu verifikasi."
+  },
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf",
+   "slide": "FSD p.6 (Exceptions)",
+   "step": "Jika terjadi masalah saat ambil/kirim data, Staff melihat modal error dengan pesan yang sesuai",
+   "repo": "spms_common_iz_web_app-main",
+   "code_ref": "spms_common_iz_web_app-main/src/Services/axios.configuration.js:43",
+   "fit": "Sebagian",
+   "detail": "Ada modal error global: respons 404/500 dan 400 menyalakan flag (spms_common_iz_web_app-main/src/Services/axios.configuration.js:43-47) dan spms_common_iz_web_app-main/src/Components/ContentLayout.js:11-15 menampilkan pesan umum 'We are unable to display the requested page...' / 'unable to retrieve the record...'. Pesan tidak spesifik (mis. module ID duplikat dari spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/service/ApplicationModuleService.java:62 jadi pesan generik). Selain itu NotExistsException dikembalikan HTTP 200 (spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/exception/CustomControllerAdvice.java:27-30), jadi update/delete module yang sudah tidak ada tidak memunculkan modal error di UI."
+  },
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf",
+   "slide": "FSD p.6",
+   "step": "Tidak ada proses approval untuk membuat, mengubah, atau menghapus module",
+   "repo": "spms_common_iz_api_app-main",
+   "code_ref": "spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/service/ApplicationModuleService.java:65",
+   "fit": "Sesuai",
+   "detail": "Create, update dan delete langsung menyimpan/menghapus di database (spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/service/ApplicationModuleService.java:65, :79, :113). Entity spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/entities/ApplicationModule.java:19-55 tidak punya kolom status atau relasi approval, dan tidak ada langkah supporter/approver di jalur module."
+  }
+ ]
+}

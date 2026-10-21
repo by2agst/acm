@@ -1,0 +1,65 @@
+{
+ "story": "ACM1.5",
+ "steps": [
+  {
+   "en": "Staff logs in and reaches ACM only if they hold an ACM role.",
+   "id": "Staff login dan masuk ACM hanya kalau punya role ACM.",
+   "why_en": "The sign-in itself is handled outside the code we can see.",
+   "why_id": "Proses login sendiri ada di luar code yang bisa dicek."
+  },
+  {
+   "en": "Only the menu hides this page from non-admins.",
+   "id": "Hanya menu yang menyembunyikan halaman ini dari non-admin.",
+   "why_en": "The page address and the system do not check the admin role.",
+   "why_id": "Alamat halaman dan sistem tidak cek role admin."
+  },
+  {
+   "en": "Staff sees a table of all functions with app, module, name and ID.",
+   "id": "Staff melihat tabel semua function dengan app, module, nama, dan ID.",
+   "why_en": "",
+   "why_id": ""
+  },
+  {
+   "en": "Staff can search and export to CSV, but cannot sort.",
+   "id": "Staff bisa search dan export ke CSV, tapi tidak bisa sort.",
+   "why_en": "Sorting the table is missing.",
+   "why_id": "Fitur sort tabel tidak ada."
+  },
+  {
+   "en": "Add New Function opens a form with all the required fields.",
+   "id": "Add New Function membuka form dengan semua field yang diminta.",
+   "why_en": "",
+   "why_id": ""
+  },
+  {
+   "en": "Submitting saves the new function in the system.",
+   "id": "Submit menyimpan function baru ke sistem.",
+   "why_en": "",
+   "why_id": ""
+  },
+  {
+   "en": "Edit lets staff change the URL as well, not only the description.",
+   "id": "Edit membolehkan staff ubah URL juga, bukan hanya deskripsi.",
+   "why_en": "The spec says description only, but the URL can also be changed.",
+   "why_id": "Spec bilang hanya deskripsi, tapi URL juga bisa diubah."
+  },
+  {
+   "en": "Delete asks for confirmation in a pop-up, then removes the function.",
+   "id": "Delete minta konfirmasi lewat pop-up, lalu function dihapus.",
+   "why_en": "",
+   "why_id": ""
+  },
+  {
+   "en": "Changes take effect right away with no approval.",
+   "id": "Perubahan langsung berlaku tanpa approval.",
+   "why_en": "",
+   "why_id": ""
+  },
+  {
+   "en": "Failures show a pop-up, but only a generic message.",
+   "id": "Kegagalan menampilkan pop-up, tapi hanya pesan umum.",
+   "why_en": "The pop-up does not say what exactly went wrong.",
+   "why_id": "Pop-up tidak menyebut apa yang salah."
+  }
+ ]
+}

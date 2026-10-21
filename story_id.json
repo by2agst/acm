@@ -1,0 +1,13 @@
+{
+ "ACM1.1": "Staff with AC-ADMIN creates, edits (description only) and deletes an application (name, id, URL); no approval.",
+ "ACM1.2": "Staff manages modules under an application.",
+ "ACM1.3": "Staff manages users of an application.",
+ "ACM1.4": "Staff manages roles of an application.",
+ "ACM1.5": "Staff manages functions (with URL) of an application.",
+ "ACM1.6": "Admin grants roles to a user.",
+ "ACM1.7": "Admin assigns or unassigns functions to a role.",
+ "ACM1.8": "AC-SUPPORT validates role grants made by the admin.",
+ "ACM1.9": "AC-APPROVE approves role grants made by the admin.",
+ "ACM1.10": "Audit of actions performed in ACM.",
+ "ACM1.11": "Removal of resigned staff from ACM."
+}

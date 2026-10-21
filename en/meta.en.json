@@ -1,0 +1,61 @@
+{
+ "prelim": {},
+ "orphans": [
+  {
+   "feature": "Module access report and inactivity warning e-mail",
+   "source": "ModuleAccessReportSchedulerService.java:48-51, ModuleAccessReportHelper, LoggedInAcmUserScheduler.java:51,161 (template email acm_module_inactivity_notification), MODULE_TRACKING_TODO.md (iz API)",
+   "story": "ACM1.2, ACM1.10",
+   "type": "Code with no story",
+   "verified": "Verified: code exists. The module access report and the 50-day warning e-mail are in neither FSD v1.2 nor the Functional Document. The INACTIVE_BY_SYSTEM status (no login for 90 days) is named in the Functional Document p.19 as a status definition, without flow steps. Schedule differs per profile (prd monthly, default daily).",
+   "note": "Reported by the 1.2 and 1.10 agents, then verified by an independent reviewer."
+  },
+  {
+   "feature": "Scheduled audit trail by e-mail",
+   "source": "AuditTrailFileSchedulerService.java:39-53",
+   "story": "ACM1.10",
+   "type": "Code with no story",
+   "verified": "Verified: code exists. Not mentioned in FSD v1.2 or the Functional Document. Schedule per profile: prd monthly (application-prd.yml:13), uat weekly, sit/dev daily, local off.",
+   "note": "Audit CSV emailed to URA. FSD 1.10 only describes the Audit Trail screen. Its data comes from the user-role and role tables only, like the screen."
+  },
+  {
+   "feature": "Privileged Activities report",
+   "source": "PrivilegedActivityReportController.java:24-28, PrivilegedActivityReportService.java:38-44, PRIVILEGED_ACTIVITIES_REPORT.md",
+   "story": "ACM1.10",
+   "type": "Code with no story",
+   "verified": "Verified: code exists. Not in FSD v1.2; appears only as a menu name in the Functional Document p.6 with no description. A separate screen from Audit Trail, reading transaction tables that Audit Trail does not read. The AC-admin check is enforced on the server (controller lines 54-59).",
+   "note": "Candidate to attach to ACM1.10 as a proposal. Whether the HCL_CAC slide 'Audit any actions in ACM' refers to it cannot be verified."
+  },
+  {
+   "feature": "Login/logout audit log",
+   "source": "UserAccessController.java:94-105, UserAccessService.java:147,211-225",
+   "story": "ACM1.10",
+   "type": "Code with no story",
+   "verified": "Verified: code exists. Records LOGIN and LOGOUT per module in an audit table; in neither FSD nor the Functional Document; not shown by the Audit Trail screen, used by the module access report.",
+   "note": "The /acm/v1/userAccess/logoutAuditTrail endpoint is in the ACMAuthTokenFilter allowlist."
+  },
+  {
+   "feature": "Role-function and function audit rows",
+   "source": "RoleFunctionTransactionService, FunctionTransactionService.java:37,68,100, RoleFunctionService.java:51,68,87",
+   "story": "ACM1.5, ACM1.7",
+   "type": "Code with no story",
+   "verified": "Verified: code exists. Not in FSD 1.5/1.7 or the Functional Document. The Audit Trail screen does NOT read them (AuditTrailEnquiryServiceHelper.java:27-30); only the Privileged Activities Report does (PrivilegedActivityReportService.java:39,43).",
+   "note": "Function: create, update and delete are recorded; role-function: three save calls (lines 51, 68, 87)."
+  },
+  {
+   "feature": "Dead code validateAdminUserOrNot",
+   "source": "spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/service/UserRoleService.java:88-94",
+   "story": "ACM1.6",
+   "type": "Dead code",
+   "verified": "Re-verified: grep over all of src (main and test) finds only its definition (UserRoleService.java:88).",
+   "note": "Checks UserType.ADMIN in the database, not the AC-ADMIN role. Reflection use cannot be ruled out."
+  },
+  {
+   "feature": "Resigned-staff job: lock, error e-mail, log, manual trigger",
+   "source": "SoftDeleteAcmUserScheduler.java:26,34; SoftDeleteAcmUserServiceHelper.java:38-47; SoftDeleteAcmUsersSchedulerController.java:12-24 (WebSecurityConfig.java:63)",
+   "story": "ACM1.11",
+   "type": "Code with no story",
+   "verified": "Verified: code exists. The manual endpoint POST /acm/v1/scheduler/softDeleteAcmUserScheduler has no authentication or authorization in the repo (controller without a check, not a filter path, CSRF-exempt, permitAll); an API gateway in front of the app is not visible from the repo. ROLE_ID in DELETED_ACM_USER_ROLE_LOG is filled with the user_role row id (SoftDeleteAcmUserServiceHelper.java:40).",
+   "note": "Three other manual triggers share the pattern (WebSecurityConfig.java:60-62, UserAccessController.java:79-89)."
+  }
+ ]
+}

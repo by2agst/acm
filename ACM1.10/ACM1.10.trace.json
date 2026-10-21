@@ -1,0 +1,100 @@
+{
+ "story": "ACM1.10",
+ "code_commit": "90482ed",
+ "flow_ref": "ACM_FSD _v1.2.pdf section 1.10 (p.21); ACM_Functional_Document_v1.0.pdf section 6 menu list only; HCL_CAC.pptx (audit mentioned, high level). FSD wins.",
+ "code_summary": "Halaman Audit Trail (React) memanggil POST /acm/v1/audit/enquiry; server memfilter transaksi user-role per action, user, dan tanggal. Export adalah CSV di browser.",
+ "note": "Evidence dihitung dari kode, bukan dari klaim dokumen. Role AC-ADMIN hanya dicek di menu UI. Nilai roleId di database tidak bisa diverifikasi dari repo. Deck lain setelah FSD v1.2 tidak diketahui. Code ref di repo zip snapshot.",
+ "recommendation": "Klaim sebagian: filter, pencarian, dan export CSV berfungsi untuk perubahan user-role. Perlu perbaikan: cek AC-ADMIN di server, filter Feature yang nyata, cakupan modul lain, dan export .xlsx. Perbaiki juga ACMAuthTokenFilter agar hasil isValidToken dipakai dan filter mencakup /acm/v1/audit/**.",
+ "steps": [
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf",
+   "slide": "p.21 (1.10 basic course, row 1)",
+   "step": "Staff login ke Staff Portal, sistem authenticate dengan AAD dan validasi akses ke ACM",
+   "repo": "spms_common_iz_api_app-main",
+   "code_ref": "spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/security/jwt/ACMAuthTokenFilter.java:70",
+   "fit": "Sebagian",
+   "detail": "ACMAuthTokenFilter memanggil azureJwtValidate.isValidToken (baris 70) tetapi hasil boolean-nya dibuang, jadi token yang gagal validasi tetap diterima; filter hanya jalan untuk 8 path (baris 42-49) dan /acm/v1/audit/enquiry tidak termasuk, sehingga endpoint audit tidak diautentikasi filter ini. Validasi AAD yang menolak token ada di AuthService.java:127-133 (hanya profile prd); penukaran token AAD ke JWT ACM ada di AuthService.java:112-171. Di web, PrivateRouteACMConfig hanya mengizinkan route jika user punya role dengan applicationId 'ACM' (spms_common_iz_web_app-main/src/Navigation/PrivateRouteConfig.js:14-30). Halaman landing Staff Portal dan layar login Microsoft tidak ada di repo ini (cannot verify from repo)."
+  },
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf",
+   "slide": "p.21 (Notes: AC-ADMIN only; BR-AT-001)",
+   "step": "Hanya staff dengan role AC-ADMIN yang dapat mengakses modul Audit Trail",
+   "repo": "spms_common_iz_web_app-main",
+   "code_ref": "spms_common_iz_web_app-main/src/Utility/constant.js:19",
+   "fit": "Sebagian",
+   "detail": "Opsi dropdown 'Audit Trail' punya accessRole 'AC-admin' (Utility/constant.js:19) dan LayoutACM.js:49-53 hanya menampilkan opsi jika roleId user sama persis (case-sensitive) dengan nilai itu; apakah roleId di database 'AC-ADMIN' atau 'AC-admin' tidak bisa diverifikasi dari repo. Tetapi route /acm/audit-trails-enquiry hanya dibungkus PrivateRouteACMConfig (RoutesConfig.js:183-188), yang cuma cek akses ACM, bukan AC-ADMIN. Di server, AuditTrailEnquiryController tidak punya cek role (AuditTrailEnquiryController.java:21-34) dan WebSecurityConfig memakai permitAll untuk /** di profile dev/local/sit (anyRequest permitAll, WebSecurityConfig.java:113-124) dan uat/prd (requestMatchers(\"/**\").permitAll(), WebSecurityConfig.java:167). Jadi pembatasan AC-ADMIN hanya di UI menu; satu-satunya cek AC-admin di server ada di PrivilegedActivityReportController (PrivilegedActivityReportController.java:54-59), sehingga pemanggil non-admin yang bisa menjangkau endpoint /acm/v1/audit/enquiry bisa mengambil data (cannot verify from repo: API gateway di depan app). Apakah halaman bisa dibuka langsung lewat URL tidak bisa diverifikasi."
+  },
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf",
+   "slide": "p.21 (row 2)",
+   "step": "Staff memilih Audit Trail; sistem menampilkan filter Action, Staff Name, Feature, Date Range",
+   "repo": "spms_common_iz_web_app-main",
+   "code_ref": "spms_common_iz_web_app-main/src/Containers/ACM/AuditTrailsEnquiry/index.js:115",
+   "fit": "Sesuai",
+   "detail": "Containers/ACM/index.js:318-319 merender AuditTrailEnquiryPage saat moduleType 'AT'. index.js:115-126 merender SelectAction, StaffInputField, SelectFeature, SelectModule (filter tambahan di luar flow) dan DateRangeFilters."
+  },
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf",
+   "slide": "p.21 (row 2, filter Action: Add, Modify, Delete)",
+   "step": "Staff memfilter berdasarkan Action (Add, Modify, Delete)",
+   "repo": "spms_common_iz_api_app-main",
+   "code_ref": "spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/helper/AuditTrailEnquiryServiceHelper.java:36",
+   "fit": "Sesuai",
+   "detail": "Opsi UI All/ADD/MODIFY/DELETE ada di spms_common_iz_web_app-main/src/Utility/constant.js:37-43 dan dikirim sebagai 'action' (index.js:58). Server memvalidasi terhadap enum ActionType (AuditTrailEnquiryService.java:63-70) dan memfilter hasil per action, atau semua jika 'ALL' (AuditTrailEnquiryServiceHelper.java:36-37). Nilai UI 'All' lalu di-uppercase ke 'ALL' (index.js:58)."
+  },
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf",
+   "slide": "p.21 (row 2, filter Staff Name)",
+   "step": "Staff memfilter berdasarkan nama staff",
+   "repo": "spms_common_iz_api_app-main",
+   "code_ref": "spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/service/UserRoleTransactionService.java:199",
+   "fit": "Sesuai",
+   "detail": "StaffInput.js:20 memanggil lookup nama (END_POINTS.GET_STAFF_NAME -> /acm/v1/user/viewAllUserNames, ServiceConfig.js:73; UserController.java:80-85), userId terpilih dikirim di payload, 'ALL' jika kosong (index.js:62). UserRoleTransactionService.java:199-204 memakai query per userId atau semua (UserRoleTransactionRepository.java:22-26)."
+  },
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf",
+   "slide": "p.21 (row 2, filter Feature)",
+   "step": "Staff memfilter berdasarkan Feature",
+   "repo": "spms_common_iz_api_app-main",
+   "code_ref": "spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/service/AuditTrailEnquiryService.java:56",
+   "fit": "Beda dari flow",
+   "detail": "UI hanya menyediakan satu opsi Feature, 'Manage User-Role' (USERROLE), opsi lain di-comment (Utility/constant.js:52-59). Server hanya memvalidasi nilai feature terhadap enum ManageFeatures (AuditTrailEnquiryService.java:56-59; ManageFeatures.java:3-4), tetapi AuditTrailEnquiryServiceHelper.getAuditTrailEnquiryData tidak memakai nilai itu; data selalu dari tabel user-role transaction (AuditTrailEnquiryServiceHelper.java:66-67). Jadi 'Feature' tidak benar-benar memfilter. Karena nilai Feature tidak mempengaruhi hasil, step dinilai Beda dari flow."
+  },
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf",
+   "slide": "p.21 (row 2, filter Date Range)",
+   "step": "Staff memfilter berdasarkan rentang tanggal",
+   "repo": "spms_common_iz_api_app-main",
+   "code_ref": "spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/helper/AuditTrailEnquiryServiceHelper.java:63",
+   "fit": "Sesuai",
+   "detail": "UI mewajibkan fromDate dan toDate sebelum Search (index.js:83-86). Server memperluas rentang dari awal hari fromDate sampai 23:59:59.999 toDate (AuditTrailEnquiryServiceHelper.java:63-65) dan query memakai effectiveDate between (UserRoleTransactionRepository.java:22-26)."
+  },
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf",
+   "slide": "p.21 (row 3, Search)",
+   "step": "Staff klik Search; sistem mengambil semua detail sesuai filter dan menampilkannya dalam tabel",
+   "repo": "spms_common_iz_api_app-main",
+   "code_ref": "spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/controller/AuditTrailEnquiryController.java:29",
+   "fit": "Sebagian",
+   "detail": "Klik Search mengirim POST ke GET_AUDIT_REPORT (index.js:93; GetAuditReportSaga.js:17-18; ServiceConfig.js:74) -> AuditTrailEnquiryController.java:29-34 -> AuditTrailEnquiryService.getAuditTrailEnquiry (baris 29-38) -> helper. Hasil diperkaya nama role, nama user, nama application dari tabel transaction (AuditTrailEnquiryServiceHelper.java:52-78) dan tampil di DataTable module 'AT' (index.js:157-162). Hasil kosong adalah state valid (AuditTrailEnquiryService.java:36). Tetapi sumber data hanya UserRoleTransaction; service transaction lain (ApplicationTransactionService, UserTransactionService, FunctionTransactionService, dst) mencatat perubahan, namun tidak dibaca endpoint ini, jadi 'semua detail' aktivitas ACM tidak terpenuhi."
+  },
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf",
+   "slide": "p.21 (row 4, Export to Excel)",
+   "step": "Staff klik Export to Excel; semua data diunduh sebagai file Excel",
+   "repo": "spms_common_iz_web_app-main",
+   "code_ref": "spms_common_iz_web_app-main/src/Containers/ACM/AuditTrailsEnquiry/index.js:172",
+   "fit": "Sebagian",
+   "detail": "Tombol 'Export to Excel' memakai CSVLink (react-csv) dengan filename 'AuditTrailReport.csv' (index.js:172-193), tampil hanya jika ada hasil (index.js:171). Datanya adalah auditReportList yang sudah ada di layar, dibuat di browser, bukan endpoint export di server. Format .csv terbuka di Excel tetapi bukan .xlsx. Terpisah, ada job scheduler yang mengirim CSV audit trail lewat email (service/scheduler/AuditTrailFileSchedulerService.java:39), di luar flow ini; bulanan hanya di profile prd (application-prd.yml:13), uat mingguan, sit/dev harian."
+  },
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf",
+   "slide": "p.21 (Exceptions)",
+   "step": "Jika terjadi masalah saat mengambil data, staff melihat modal pop up dengan pesan error",
+   "repo": "spms_common_iz_web_app-main",
+   "code_ref": "spms_common_iz_web_app-main/src/Services/axios.configuration.js:43",
+   "fit": "Sebagian",
+   "detail": "Interceptor axios memicu setApiErrorTrue untuk status 404/500 (axios.configuration.js:43-44) dan setApiError400 untuk 400 (baris 46-47); ContentLayout.js:6-23 menampilkan Modal 'Something went wrong' dengan pesan generik. Error status lain (mis. 403 setelah retry, 401) tidak memicu modal. GetAuditReportSaga hanya menyimpan error ke state (GetAuditReportSaga.js:34-35, AcmAuditTrailReducer.js:31-35) tanpa pesan di halaman. Validasi server yang gagal mengembalikan HTTP 400 (CustomControllerAdvice.java:32-35); staff melihat modal generik (ContentLayout.js:13-15), pesan teknis server tidak ditampilkan."
+  }
+ ]
+}

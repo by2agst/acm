@@ -1,0 +1,211 @@
+{
+  "schema_version": 1,
+  "diagram_type": "sequence",
+  "meta": {
+    "title": "ACM1.4 Manage Roles",
+    "output": "ACM1.4/ACM1.4.sequence.html",
+    "locale": "en",
+    "viewBox": [
+      1080,
+      620
+    ],
+    "column_fit": "spread",
+    "animation": "trace",
+    "quality_profile": "showcase",
+    "views": [
+      {
+        "id": "list",
+        "label": "List and search",
+        "focus": [
+          "staff",
+          "web",
+          "api",
+          "db"
+        ],
+        "note": "Role table loads through viewRoles; search uses contains."
+      },
+      {
+        "id": "save",
+        "label": "Create and edit",
+        "focus": [
+          "web",
+          "api",
+          "db"
+        ],
+        "note": "createRole and updateRole; limits only in the UI."
+      },
+      {
+        "id": "delete",
+        "label": "Delete",
+        "focus": [
+          "web",
+          "api",
+          "db"
+        ],
+        "note": "Delete only if no user holds the role."
+      }
+    ]
+  },
+  "participants": [
+    {
+      "id": "staff",
+      "type": "external",
+      "label": "Staff",
+      "sublabel": "AC-ADMIN (UI)"
+    },
+    {
+      "id": "web",
+      "type": "frontend",
+      "label": "Web App",
+      "sublabel": "React / saga"
+    },
+    {
+      "id": "api",
+      "type": "backend",
+      "label": "RoleController",
+      "sublabel": "RoleService"
+    },
+    {
+      "id": "db",
+      "type": "database",
+      "label": "ACM_ROLE",
+      "sublabel": "+ user role link"
+    }
+  ],
+  "segments": [
+    {
+      "from": 150,
+      "to": 280,
+      "label": "List + search"
+    },
+    {
+      "from": 290,
+      "to": 385,
+      "label": "Create / edit"
+    },
+    {
+      "from": 395,
+      "to": 525,
+      "label": "Delete"
+    }
+  ],
+  "messages": [
+    {
+      "id": "m1",
+      "from": "staff",
+      "to": "web",
+      "y": 160,
+      "label": "open Manage Roles",
+      "variant": "default"
+    },
+    {
+      "id": "m2",
+      "from": "web",
+      "to": "api",
+      "y": 195,
+      "label": "POST viewRoles {searchText}",
+      "variant": "emphasis"
+    },
+    {
+      "id": "m3",
+      "from": "api",
+      "to": "db",
+      "y": 230,
+      "label": "findAll / Containing",
+      "variant": "default"
+    },
+    {
+      "id": "m4",
+      "from": "api",
+      "to": "web",
+      "y": 265,
+      "label": "role list (200)",
+      "variant": "return"
+    },
+    {
+      "id": "m5",
+      "from": "staff",
+      "to": "web",
+      "y": 300,
+      "label": "Add/Edit form, Submit",
+      "variant": "default"
+    },
+    {
+      "id": "m6",
+      "from": "web",
+      "to": "api",
+      "y": 335,
+      "label": "createRole / updateRole",
+      "variant": "emphasis"
+    },
+    {
+      "id": "m7",
+      "from": "api",
+      "to": "db",
+      "y": 370,
+      "label": "save (dup roleId check)",
+      "variant": "default"
+    },
+    {
+      "id": "m8",
+      "from": "staff",
+      "to": "web",
+      "y": 405,
+      "label": "Delete + confirm",
+      "variant": "default"
+    },
+    {
+      "id": "m9",
+      "from": "web",
+      "to": "api",
+      "y": 440,
+      "label": "POST deleteRole",
+      "variant": "emphasis"
+    },
+    {
+      "id": "m10",
+      "from": "api",
+      "to": "db",
+      "y": 475,
+      "label": "find users of role",
+      "variant": "default"
+    },
+    {
+      "id": "m11",
+      "from": "api",
+      "to": "web",
+      "y": 510,
+      "label": "delete OK / ACM500",
+      "variant": "return"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Matches the flow",
+      "items": [
+        "List, search, CSV export",
+        "Create role saved to DB",
+        "Delete blocked if users hold the role"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Gaps",
+      "items": [
+        "No AC-ADMIN check on the server",
+        "Edit description-only only in the UI",
+        "No URL field, no column sort"
+      ]
+    },
+    {
+      "dot": "orange",
+      "title": "To verify",
+      "items": [
+        "AAD login not traced",
+        "Role id casing AC-admin vs AC-ADMIN",
+        "Edit may open wrong row if page size is not 10"
+      ]
+    }
+  ]
+}

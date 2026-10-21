@@ -1,0 +1,65 @@
+{
+ "story": "ACM1.7",
+ "flow_ref": "ACM_FSD _v1.2.pdf section 1.7 (p. 16) wins; ACM_Functional_Document_v1.0.pdf section 10 (pp. 13-14) adds the at-least-one-function and same-application rules. HCL_CAC.pptx is high level only (Users/Roles/Functions entities) and is not used as step evidence.",
+ "code_summary": "The UI-to-API flow works: RoleList (search, CSV export) -> edit -> RoleFunctionMapping (AutoSelect) -> saga POST mapRoleFunctions -> RoleFunctionService (add/delete diff, RoleFunctionTransaction audit), with no approval. The AC-ADMIN restriction, the at-least-one-function rule and the same-application rule are enforced in the UI only; the backend has no check.",
+ "note": "Baseline: code zip snapshot commit 90482ed. The HCL_CAC.pptx deck has no detailed steps for this story. Column sort and \"deleted\" roles were judged from the code (no status column, hard delete).",
+ "recommendation": "Add server-side checks: AC-ADMIN role on RoleFunctionController, function.application == role.application, and non-empty functionIds; remove the permitAll(\"/**\") in WebSecurityConfig for uat/prd; wrap the RFM route in PrivateRouteACMConfig.",
+ "steps": [
+  {
+   "step": "Staff logs in to Staff Portal; system authenticates with AAD and validates access",
+   "detail": "ACMAuthTokenFilter calls azureJwtValidate.isValidToken (ACMAuthTokenFilter.java:70) but discards its boolean result: a token that fails validation is still accepted, the email is taken from the payload (line 72) and the authorities are loaded from the user roles (lines 74-77). Validation is skipped for the TEST/DEV/LOCAL/UAT profiles (lines 68-70). The filter only runs for the 8 paths in the flag variable (lines 42-49) and the roleFunctionMapping paths are not among them, so this step's endpoint is not authenticated by that filter. The AAD validation that actually rejects a token is in AuthService.java:127-133 (prd profile only). The portal login itself is outside this repo and cannot be verified from the repo."
+  },
+  {
+   "step": "Role Function Mapping menu only visible to staff with AC-ADMIN role",
+   "detail": "The module dropdown is filtered in LayoutACM.js:51 with roleList.includes(el.accessRole); RFM has accessRole \"AC-admin\" (Utility/constant.js:18). But the route /acm/manage-role-function uses a plain Route (Navigation/RoutesConfig.js:149-153), not PrivateRouteACMConfig, so a direct URL is not role-checked. The restriction exists only in the UI menu."
+  },
+  {
+   "step": "System loads Application Id, Role Id, Role Name of all roles (except deleted)",
+   "detail": "When moduleType is RFM, getRoleList is called (index.js:67) against POST acm/v1/role/viewRoles (RoleController.java:42-49), which returns roleRepository.findAll() (RoleService.java:97-104). The RoleList table shows the columns Application ID, Role ID, Role Name, Action (Utility/constant.js:112-117; DataTable.js:468-490). The Role entity has no status column and deleteRole removes the row physically (RoleService.java:126), so deleted roles indeed do not appear."
+  },
+  {
+   "step": "Staff can search Role ID and Role Name",
+   "detail": "SearchBox calls getRoleList({searchText}) (RoleList.js:12-14) against viewRoles; when searchText is not blank, RoleController.java:45-46 calls getRolesByIdAndName, which uses findByRoleIdContainingOrRoleNameContaining (RoleService.java:151-152), a contains search on Role ID or Role Name."
+  },
+  {
+   "step": "Staff can sort the Role ID and Role Name fields",
+   "detail": "Data is sorted in a fixed way by roleName through sortObject(roleData, \"roleName\") (index.js:301; Packages/Common.js:50). No staff-clickable sort control on the column headers was found in DataTable.js for module RMF, and there is no Role ID sort."
+  },
+  {
+   "step": "Staff can export searched/filtered data to Excel",
+   "detail": "The \"Export to Excel\" button (Components/ExportToExcel.js:6-16) uses CSVLink from react-csv with the roleData currently shown (the search result) and a file named \"Roles.csv\" (RoleList.js:34). The output is CSV, not an .xlsx file; Excel can open it."
+  },
+  {
+   "step": "Clicking edit loads the Map Role Function form with the functions already assigned",
+   "detail": "The edit icon calls handleAddRoleFunctionMapping (DataTable.js:83-87): it dispatches getRoleFunctionDetails to POST viewRoleFunctionMappings (ServiceConfig.js:58; RoleFunctionController.java:35-39, RoleFunctionService.java:94-101), then the RoleFunctionMapping form titled \"Map Role Function (<roleId>)\" shows the existing functions as existingOptions (RoleFunctionMapping.js:21,29-35,69-77)."
+  },
+  {
+   "step": "Only functions of the role's own application may be assigned",
+   "detail": "The UI only offers functions of the role's application: DataTable.js:84 calls getFunctionListByAppId(applicationId) against viewFunctionsByAppId (FunctionController.java:58-61; FunctionService.java:129-141). On the server, mapRoleFunctions only calls functionService.getFunction(functionId) (RoleFunctionService.java:44,78), which just checks the function exists; there is no check that the function belongs to the same application as the role, so a direct request can map a function of another application."
+  },
+  {
+   "step": "Staff can assign (add) and unassign (remove) functions on the role",
+   "detail": "The AutoSelect component (RoleFunctionMapping.js:69-77) changes the functionIds value through getSelectedValue/setFieldValue (lines 54-61), so functions can be added to or removed from the selected list before submit."
+  },
+  {
+   "step": "At least one function must remain assigned to the role",
+   "detail": "The UI validates functionIds with Yup.array().required(\"Select atleast one function to map with role.\") (SechmaValidation.js:48; yup ^0.32.9 rejects an empty array). On the server functionIds is only @NotNull (RoleFunctionMappingRequest.java:18-19), so an empty list passes and mapRoleFunctions deletes all mappings (RoleFunctionService.java:59-71). The rule is enforced in the UI only."
+  },
+  {
+   "step": "Submit sends the request to the backend; the submitted list becomes the role's complete function list",
+   "detail": "index.js:252-266 builds the payload {mappedBy, roleId, functionIds} and dispatches postRoleFunction to POST mapRoleFunctions (Sagas/RoleFunctionMapping/RoleFunctionMappingPostSaga.js:16-24; RoleFunctionController.java:29-33). The service computes the difference: existing functions absent from the request are deleted (lines 58-71), new ones not yet present are added (lines 73-88), inside one @Transactional (line 34); if the role has no functions yet, all are added (lines 40-52). The result is that the request list becomes the complete role list. Each change is recorded in RoleFunctionTransaction (RoleFunctionTransactionService.java:25-27)."
+  },
+  {
+   "step": "No approval process for role function mapping",
+   "detail": "mapRoleFunctions saves and deletes ACM_ROLE_FUNCTION rows directly (RoleFunctionService.java:45,65,79) with no pending status or supporter/approver step, unlike user-role mapping which uses status PENDING (index.js:236-245)."
+  },
+  {
+   "step": "On retrieve/submit failure, staff sees a modal pop-up with an error message",
+   "detail": "The axios interceptor dispatches setApiErrorTrue for 404/500 and setApiError400 for 400 (axios.configuration.js:43-48), which opens the \"Something went wrong\" Modal in ContentLayout.js:8-26 with a generic message. Other statuses (e.g. 403 after retry, 401) do not trigger the modal. ContentLayout only wraps routes through PrivateRouteACMConfig (PrivateRouteConfig.js:21), while the RFM route uses a plain Route; whether the modal shows on this page cannot be confirmed from the repo. Saga errors (errorRoleFUnction) are only stored in state and not displayed."
+  },
+  {
+   "step": "Server only allows AC-ADMIN staff to call mapRoleFunctions",
+   "detail": "RoleFunctionController has no @PreAuthorize or role check on mapRoleFunctions/viewRoleFunctionMappings (lines 29-39). ACMAuthTokenFilter does not cover these paths (lines 42-49), and the uat/prd chain adds requestMatchers(\"/**\").permitAll() (WebSecurityConfig.java:167), so unauthenticated requests still pass. Any gateway/WAF configuration in front of the API cannot be verified from the repo."
+  }
+ ]
+}

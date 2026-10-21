@@ -1,0 +1,65 @@
+{
+ "story": "ACM1.10",
+ "steps": [
+  {
+   "en": "Staff signs in and lands in ACM only with ACM access",
+   "id": "Staff login dan masuk ACM hanya jika punya akses ACM",
+   "why_en": "Login screen and portal landing page are outside this code, and the sign-in check is not actually enforced.",
+   "why_id": "Layar login dan landing portal di luar kode ini, dan pengecekan login tidak benar-benar dipaksakan."
+  },
+  {
+   "en": "Only AC-ADMIN staff can open Audit Trail",
+   "id": "Hanya staff AC-ADMIN yang bisa membuka Audit Trail",
+   "why_en": "Only the menu hides it; opening the page or data directly is not blocked.",
+   "why_id": "Hanya menu yang menyembunyikannya; membuka halaman atau data langsung tidak diblokir."
+  },
+  {
+   "en": "Audit Trail page shows Action, Staff, Feature and date filters",
+   "id": "Halaman Audit Trail menampilkan filter Action, Staff, Feature, dan tanggal",
+   "why_en": "",
+   "why_id": ""
+  },
+  {
+   "en": "Results can be filtered by Add, Modify or Delete action",
+   "id": "Hasil bisa difilter berdasarkan aksi Add, Modify, atau Delete",
+   "why_en": "",
+   "why_id": ""
+  },
+  {
+   "en": "Results can be filtered by a chosen staff name",
+   "id": "Hasil bisa difilter berdasarkan nama staff yang dipilih",
+   "why_en": "",
+   "why_id": ""
+  },
+  {
+   "en": "Feature filter is accepted but does not change results",
+   "id": "Filter Feature diterima tetapi tidak mengubah hasil",
+   "why_en": "The Feature choice is shown but it does not change the result.",
+   "why_id": "Pilihan Feature tampil tapi tidak mengubah hasil."
+  },
+  {
+   "en": "Results can be filtered by a from and to date",
+   "id": "Hasil bisa difilter berdasarkan tanggal awal dan akhir",
+   "why_en": "",
+   "why_id": ""
+  },
+  {
+   "en": "Search lists matching records in a table",
+   "id": "Search menampilkan data yang cocok dalam tabel",
+   "why_en": "Only user-role changes are listed, not changes to applications, modules, users or roles.",
+   "why_id": "Hanya perubahan user-role yang tampil, bukan perubahan application, module, user, atau role."
+  },
+  {
+   "en": "Export button downloads the table on screen as a file",
+   "id": "Tombol Export mengunduh isi tabel di layar sebagai file",
+   "why_en": "The file is a CSV, not an Excel workbook.",
+   "why_id": "File berupa CSV, bukan workbook Excel."
+  },
+  {
+   "en": "A failed search shows an error pop-up",
+   "id": "Pencarian yang gagal menampilkan pop up error",
+   "why_en": "The pop-up appears only for some error codes, and is a generic message.",
+   "why_id": "Pop up hanya muncul untuk kode error tertentu, dan pesannya generik."
+  }
+ ]
+}

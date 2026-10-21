@@ -1,0 +1,109 @@
+{
+ "story": "ACM1.1",
+ "code_commit": "90482ed",
+ "flow_ref": "FSD v1.2 bagian 1.1 (ACM_FSD _v1.2.pdf hal.4-5) menang; ACM_Functional_Document_v1.0.pdf bagian 6 (hal.6-8) untuk aturan field; HCL_CAC.pptx hanya level tinggi",
+ "code_summary": "Alur Manage Application berjalan: list/search, tambah (duplikat ditolak), hapus dengan konfirmasi dan cascade ke module/role/function (ApplicationController.java, ApplicationService.java, Application.java). Gap: tidak ada sort kolom, edit juga mengizinkan URL (bukan description saja), role AC-ADMIN hanya dicek di menu UI, error modal bersifat umum.",
+ "note": "Baseline code: git commit 90482ed (root project, berisi ketiga repo). Deck: FSD v1.2 menang atas Functional Document v1.0 (beda: FSD hanya description yang boleh diedit, Functional Document mengizinkan URL diedit). Nilai role \"AC-admin\" di Utility/constant.js:12 dan constraint DB tidak bisa diverifikasi dari repo. Ada dua daftar modul: Utility/constant.js:11 (dipakai LayoutACM, ada accessRole) dan constants/constant.js:119 (tanpa accessRole).",
+ "recommendation": "Klaim sebagian: 5 langkah Sesuai, 5 Sebagian, 1 Beda dari flow. Perbaiki sebelum klaim penuh: batasi edit ke description (UI dan API), tambah role check AC-ADMIN di server, tambah sort kolom, tampilkan pesan error spesifik.",
+ "steps": [
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf",
+   "slide": "p.4",
+   "step": "Staff login lewat Staff Portal (AAD), masuk ke ACM kalau punya role ACM",
+   "repo": "iz_web",
+   "code_ref": "spms_common_iz_web_app-main/src/Navigation/PrivateRouteConfig.js:25",
+   "fit": "Sebagian",
+   "detail": "Route /acm/manage-application dibungkus PrivateRouteACMConfig (PrivateRouteConfig.js:25-30): user hanya masuk kalau punya akses application ACM, kalau tidak di-redirect ke \"/\". Di API, ACMAuthTokenFilter.java:42-49 memvalidasi JWT Azure AD (AzureJwtValidate, baris 70-72) hanya untuk endpoint login/role yang terdaftar (getLoginUserRole dll). Login Staff Portal itu sendiri ada di luar repo ini (tidak bisa diverifikasi dari repo). Endpoint /acm/v1/application/* tidak termasuk daftar filter itu. Catatan: hasil isValidToken dibuang (ACMAuthTokenFilter.java:70), jadi token yang gagal validasi tetap diterima; validasi AAD yang menolak token ada di AuthService.java:127-133 (hanya profile prd)."
+  },
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf",
+   "slide": "p.5",
+   "step": "Hanya staff AC-ADMIN yang bisa memakai Manage Application (BR-MA-001)",
+   "repo": "iz_web",
+   "code_ref": "spms_common_iz_web_app-main/src/Components/LayoutACM.js:51",
+   "fit": "Sebagian",
+   "detail": "Menu \"Manage Applications\" hanya muncul kalau roleId user ada di accessRole: LayoutACM.js:44-53 memfilter ACM_MODULES_LIST (Utility/constant.js:12, accessRole \"AC-admin\") terhadap role user di application ACM. Tapi ini cuma gating di UI: route PrivateRouteConfig.js:25-27 hanya cek akses ACM (bukan role), ApplicationController.java:24-63 tanpa anotasi role, dan WebSecurityConfig.java:124 (dev/local/sit) serta :167 (uat/prd, requestMatchers(\"/**\").permitAll()) tidak membatasi /acm/v1/application. Jadi pemanggil API langsung tidak diblok di server. Nilai roleId \"AC-admin\" (huruf kecil) vs \"AC-ADMIN\" di FSD tidak bisa diverifikasi dari repo (data role di DB)."
+  },
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf",
+   "slide": "p.4",
+   "step": "Pilih Manage Application menampilkan ID dan Nama semua application aktif (yang dihapus tidak tampil)",
+   "repo": "iz_api",
+   "code_ref": "spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/controller/ApplicationController.java:44",
+   "fit": "Sesuai",
+   "detail": "Pilihan menu MA memicu getApplicationList (Containers/ACM/index.js:64) lalu POST viewAllApplications (Sagas/Application/ApplicationSaga.js:18-25, ServiceConfig.js:31). Controller (ApplicationController.java:44-51) memanggil ApplicationService.getApplications (ApplicationService.java:90-97) = findAll. Tabel menampilkan kolom Application ID dan Application Name (Utility/constant.js:74, DataTable.js:276-285), diurutkan per applicationName (Containers/ACM/index.js:280). Delete adalah hard delete (ApplicationService.java:83), tidak ada kolom status, jadi yang terhapus memang tidak tampil."
+  },
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf",
+   "slide": "p.4",
+   "step": "Staff bisa search dan sort ID/Nama, serta export data hasil filter ke Excel",
+   "repo": "iz_web",
+   "code_ref": "spms_common_iz_web_app-main/src/Containers/ACM/ManageApplication/ApplicationTableView.js:26",
+   "fit": "Sebagian",
+   "detail": "Search ada: SearchBox (ApplicationTableView.js:38-41) mengirim searchText ke viewAllApplications (ApplicationController.java:47-48), repository memfilter contains pada applicationId OR applicationName (ApplicationRepository.java:16). Export ada: ExportToExcel (ApplicationTableView.js:55-59, ExportToExcel.js:9-17) mengunduh CSV (Applications.csv) dari data hasil search. Sort oleh user tidak ada: header tabel hanya teks (DataTable.js:262-272), hanya ada urutan tetap per applicationName (Containers/ACM/index.js:280). Export berupa file CSV, bukan .xlsx."
+  },
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf",
+   "slide": "p.4",
+   "step": "Staff klik Add New Application dan mendapat form (Name, ID, URL, Description opsional)",
+   "repo": "iz_web",
+   "code_ref": "spms_common_iz_web_app-main/src/Containers/ACM/ManageApplication/ApplicationAddEdit.js:32",
+   "fit": "Sesuai",
+   "detail": "Tombol \"Add New Application\" (ApplicationTableView.js:52-54) memanggil handleAddNew (baris 23-25) yang membuka form. Form (ApplicationAddEdit.js:32-42) berisi Application Name, Application ID, Description (isOptional, baris 34) dan URL."
+  },
+  {
+   "flow_file": "ACM_Functional_Document_v1.0.pdf",
+   "slide": "FD p.7; FSD p.5 (BR-MA-003)",
+   "step": "Aturan field: huruf/spasi (regex longgar), maks 100 karakter, description maks 200, URL valid (BR-MA-003)",
+   "repo": "iz_web",
+   "code_ref": "spms_common_iz_web_app-main/src/Containers/ACM/SechmaValidation.js:3",
+   "fit": "Sebagian",
+   "detail": "Validasi Yup di UI (SechmaValidation.js:3-17): applicationId dan applicationName wajib; regex /^[aA-zZ\\s]+$/ (baris 6, 10) memakai rentang A-z sehingga selain huruf dan spasi juga meloloskan [ \\ ] ^ _ dan backtick, jadi \"hanya huruf/spasi\" tidak persis; description max 200 (baris 7); url wajib dengan regex (baris 11-16); maxlength 100 di input (ApplicationAddEdit.js:32-33,41). Regex URL (baris 13) menolak slash di akhir (karakter terakhir harus huruf/angka/-) tetapi longgar di bagian lain (titik tidak di-escape, scheme opsional, _ lolos). Di API hanya ApplicationCreateRequest.java:16-26: @NotBlank id/name/url, url @Size(max=100), description @Size(max=256); tidak ada cek huruf-saja dan tidak ada cek format URL di server. FSD hanya menyebut BR-MA-003 \"valid URL\" (p.5); aturan huruf/spasi dan batas 100/200 hanya ada di Functional Document p.7."
+  },
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf",
+   "slide": "p.4",
+   "step": "Submit membuat application di DB; Application ID kembar ditolak; tanpa approval",
+   "repo": "iz_api",
+   "code_ref": "spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/service/ApplicationService.java:47",
+   "fit": "Sesuai",
+   "detail": "Submit (Containers/ACM/index.js:148-163,335-336) memanggil postApplication ke POST createApplication (ApplicationPostSaga.js:18-24, ServiceConfig.js:32). ApplicationController.java:32-36 -> ApplicationService.createApplication (baris 47-62): findByApplicationId, kalau sudah ada lempar ACMEntityAlreadyExistsException (baris 50, di-handle jadi HTTP 400 di CustomControllerAdvice.java:32-35), kalau belum save ke tabel ACM_APPLICATION (Application.java:17) dengan createdBy/createdDate. Tidak ada status atau langkah approval. Setelah sukses, daftar di-refresh dan kembali ke tabel (ApplicationPostSaga.js:27-29). Unique constraint di DB (Application.java:26 unique = true) tidak bisa diverifikasi dari repo."
+  },
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf",
+   "slide": "p.4",
+   "step": "Edit hanya boleh mengubah description (BR-MA-002)",
+   "repo": "iz_api",
+   "code_ref": "spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/service/ApplicationService.java:67",
+   "fit": "Beda dari flow",
+   "detail": "FSD menang: edit hanya description. Code: UI mengunci Name dan ID (isDisable={!acmData.isNew}, ApplicationAddEdit.js:32-33) tapi URL bisa diubah setelah klik ikon edit (tanpa dialog konfirmasi: TextInput.js:42-47, IconButton.js:6) (isEditConfirm, baris 35-41; sesuai Functional Document p.7, bukan FSD). API updateApplication (ApplicationService.java:64-78) men-set applicationName, description dan url (baris 67-69) tanpa membandingkan nilai lama, jadi Name bisa diganti lewat panggilan API langsung. ApplicationUpdateRequest.java:14-22 mewajibkan applicationName."
+  },
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf",
+   "slide": "p.4",
+   "step": "Delete meminta konfirmasi di modal, lalu menghapus application",
+   "repo": "iz_web",
+   "code_ref": "spms_common_iz_web_app-main/src/Components/DataTable.js:185",
+   "fit": "Sesuai",
+   "detail": "Tombol delete di baris (DataTable.js:296-301) -> handleRemove membuka modal (baris 174-182). ConfirmModal DeleteContent (ConfirmModal.js:98-118) menampilkan teks konfirmasi dengan tombol Cancel/Yes; Yes memanggil handleDelete (DataTable.js:185-192) -> deleteApplication -> POST deleteApplication (DeleteApplicationSaga.js:19-27). API: ApplicationController.java:59-63 -> ApplicationService.deleteApplication (baris 80-88, @Transactional) -> removeByApplicationId (ApplicationRepository.java:14). Catatan: kalau ID tidak ada, API membalas HTTP 200 dengan pesan (CustomControllerAdvice.java:27-30)."
+  },
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf",
+   "slide": "p.5",
+   "step": "Hapus application ikut menghapus module, role, dan function-nya (BR-MA-004)",
+   "repo": "iz_api",
+   "code_ref": "spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/entities/Application.java:52",
+   "fit": "Sesuai",
+   "detail": "Entity Application punya relasi OneToMany ke ApplicationModule dan Role dengan orphanRemoval dan CascadeType.ALL (Application.java:52-56); ApplicationModule ke Function juga CascadeType.ALL (ApplicationModule.java:53-54); Role cascade ke relasi turunannya (Role.java:39,42). removeByApplicationId (derived delete) memuat entity lalu remove sehingga cascade JPA berjalan. Teks modal juga memberi peringatan (ConfirmModal.js:110). Constraint foreign key di Azure SQL tidak bisa diverifikasi dari repo. Perilaku runtime derived delete + cascade tidak diuji di repo ini [Medium confidence]."
+  },
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf",
+   "slide": "p.4",
+   "step": "Saat gagal retrieve/submit, staff melihat modal dengan pesan error yang sesuai",
+   "repo": "iz_web",
+   "code_ref": "spms_common_iz_web_app-main/src/Components/ContentLayout.js:11",
+   "fit": "Sebagian",
+   "detail": "Interceptor axios (Services/axios.configuration.js:43-47) men-set flag global untuk status 404/500 dan 400; ContentLayout.js:11-25 menampilkan modal \"Something went wrong\" dengan teks umum (\"...an error has occurred. Please try again later.\"). Pesan dari API (mis. \"Application already exists ...\", CustomControllerAdvice.java:32-35) tidak ditampilkan; error spesifik application hanya disimpan di reducer (ApplicationReducer.js:43-47) dan tidak dibaca komponen mana pun. Error validasi lain (mis. HTTP 200 NotExists) tidak memunculkan modal."
+  }
+ ]
+}

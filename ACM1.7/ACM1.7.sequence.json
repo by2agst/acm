@@ -1,0 +1,180 @@
+{
+ "schema_version": 1,
+ "diagram_type": "sequence",
+ "meta": {
+  "title": "ACM1.7 Assign Function to Role",
+  "output": "ACM1.7/ACM1.7.html",
+  "viewBox": [
+   1080,
+   620
+  ],
+  "column_fit": "spread",
+  "animation": "trace",
+  "quality_profile": "showcase",
+  "locale": "en"
+ },
+ "participants": [
+  {
+   "id": "staff",
+   "type": "external",
+   "label": "Staff",
+   "sublabel": "AC-ADMIN user"
+  },
+  {
+   "id": "web",
+   "type": "frontend",
+   "label": "Web UI",
+   "sublabel": "React"
+  },
+  {
+   "id": "api",
+   "type": "backend",
+   "label": "Role Function API",
+   "sublabel": "controller"
+  },
+  {
+   "id": "svc",
+   "type": "backend",
+   "label": "RoleFunctionService",
+   "sublabel": "@Transactional"
+  },
+  {
+   "id": "db",
+   "type": "database",
+   "label": "ACM_ROLE_FUNCTION",
+   "sublabel": "table"
+  }
+ ],
+ "segments": [
+  {
+   "from": 150,
+   "to": 325,
+   "label": "Pick role"
+  },
+  {
+   "from": 335,
+   "to": 400,
+   "label": "Edit + submit"
+  },
+  {
+   "from": 405,
+   "to": 535,
+   "label": "Save"
+  }
+ ],
+ "messages": [
+  {
+   "from": "staff",
+   "to": "web",
+   "y": 160,
+   "label": "open Role Function Mapping",
+   "variant": "default"
+  },
+  {
+   "from": "web",
+   "to": "api",
+   "y": 190,
+   "label": "POST viewRoles (search)",
+   "variant": "emphasis"
+  },
+  {
+   "from": "api",
+   "to": "web",
+   "y": 220,
+   "label": "role list",
+   "variant": "return"
+  },
+  {
+   "from": "staff",
+   "to": "web",
+   "y": 250,
+   "label": "click edit",
+   "variant": "default"
+  },
+  {
+   "from": "web",
+   "to": "api",
+   "y": 280,
+   "label": "viewRoleFunctionMappings",
+   "variant": "emphasis"
+  },
+  {
+   "from": "api",
+   "to": "web",
+   "y": 310,
+   "label": "assigned functions",
+   "variant": "return"
+  },
+  {
+   "from": "staff",
+   "to": "web",
+   "y": 345,
+   "label": "pick functions + Submit",
+   "variant": "default"
+  },
+  {
+   "from": "web",
+   "to": "api",
+   "y": 380,
+   "label": "POST mapRoleFunctions",
+   "variant": "emphasis"
+  },
+  {
+   "from": "api",
+   "to": "svc",
+   "y": 415,
+   "label": "no AC-ADMIN check",
+   "variant": "dashed"
+  },
+  {
+   "from": "svc",
+   "to": "db",
+   "y": 450,
+   "label": "add/delete rows + audit",
+   "variant": "emphasis"
+  },
+  {
+   "from": "svc",
+   "to": "web",
+   "y": 485,
+   "label": "updated message",
+   "variant": "return"
+  },
+  {
+   "from": "web",
+   "to": "staff",
+   "y": 520,
+   "label": "back to role list",
+   "variant": "return"
+  }
+ ],
+ "cards": [
+  {
+   "dot": "emerald",
+   "title": "Matches flow",
+   "items": [
+    "Search, edit, add/remove, submit work end to end",
+    "Submitted list replaces the role list",
+    "No approval step"
+   ]
+  },
+  {
+   "dot": "rose",
+   "title": "Gap",
+   "items": [
+    "Backend has no AC-ADMIN role check",
+    "Empty list and other-app functions accepted",
+    "Direct URL not role-guarded"
+   ]
+  },
+  {
+   "dot": "orange",
+   "title": "To verify",
+   "items": [
+    "Portal AAD login is outside this repo",
+    "Error modal display on this route",
+    "Gateway/WAF in front of API"
+   ]
+  }
+ ]
+}

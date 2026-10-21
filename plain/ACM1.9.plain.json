@@ -1,0 +1,71 @@
+{
+ "story": "ACM1.9",
+ "steps": [
+  {
+   "en": "Approver Action menu appears only for users with the approve role.",
+   "id": "Menu Approver Action hanya muncul untuk user yang punya role approve.",
+   "why_en": "Only the menu is hidden; the page page address itself has no role check.",
+   "why_id": "Hanya menu yang disembunyikan; alamat halaman halamannya tidak cek role."
+  },
+  {
+   "en": "Pending role requests waiting for this approver are loaded into a table.",
+   "id": "Request role yang menunggu approver ini dimuat ke dalam tabel.",
+   "why_en": "",
+   "why_id": ""
+  },
+  {
+   "en": "Table shows ID, name, department, email, mobile, role, remarks and actions.",
+   "id": "Tabel menampilkan ID, nama, departemen, email, mobile, role, remarks, dan aksi.",
+   "why_en": "",
+   "why_id": ""
+  },
+  {
+   "en": "Approve or Reject sends the decision to the system, which updates the record.",
+   "id": "Approve atau Reject mengirim keputusan ke sistem, yang meng-update datanya.",
+   "why_en": "",
+   "why_id": ""
+  },
+  {
+   "en": "The system checks the approver role, but not against the person actually logged in.",
+   "id": "Sistem cek role approver, tetapi tidak terhadap orang yang benar-benar login.",
+   "why_en": "The role check uses a name sent by the screen, so it can be bypassed.",
+   "why_id": "Cek role memakai nama kiriman layar, jadi bisa dilewati."
+  },
+  {
+   "en": "Only approve or reject decisions are accepted.",
+   "id": "Hanya keputusan approve atau reject yang diterima.",
+   "why_en": "",
+   "why_id": ""
+  },
+  {
+   "en": "After approval, the role becomes active for the user.",
+   "id": "Setelah approve, role menjadi aktif untuk user.",
+   "why_en": "",
+   "why_id": ""
+  },
+  {
+   "en": "No email is sent to the requester when a role is approved.",
+   "id": "Tidak ada email ke pengaju saat role di-approve.",
+   "why_en": "The spec requires an email on approval; the system sends none.",
+   "why_id": "Spec meminta email saat approve; sistem tidak mengirim."
+  },
+  {
+   "en": "Rejecting a request sets it to rejected and emails the requester.",
+   "id": "Menolak request menandainya ditolak dan mengirim email ke pengaju.",
+   "why_en": "",
+   "why_id": ""
+  },
+  {
+   "en": "The processed request disappears from the approver list.",
+   "id": "Request yang sudah diproses hilang dari daftar approver.",
+   "why_en": "",
+   "why_id": ""
+  },
+  {
+   "en": "On failure a pop-up appears, but with a generic message.",
+   "id": "Saat gagal muncul pop up, tetapi dengan pesan generik.",
+   "why_en": "The pop-up does not show the specific reason for the failure.",
+   "why_id": "Pop up tidak menampilkan alasan spesifik kegagalan."
+  }
+ ]
+}

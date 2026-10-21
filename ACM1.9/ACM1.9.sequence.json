@@ -1,0 +1,260 @@
+{
+ "schema_version": 1,
+ "diagram_type": "sequence",
+ "meta": {
+  "title": "ACM1.9 Approver Action Sequence",
+  "output": "ACM1.9.sequence.html",
+  "locale": "en",
+  "viewBox": [
+   1080,
+   620
+  ],
+  "column_fit": "spread",
+  "animation": "trace",
+  "quality_profile": "showcase",
+  "views": [
+   {
+    "id": "list",
+    "label": "Pending list",
+    "focus": [
+     "user",
+     "web",
+     "api",
+     "svc",
+     "db"
+    ],
+    "note": "Menu to pending list for the designated approver."
+   },
+   {
+    "id": "action",
+    "label": "Approve or reject",
+    "focus": [
+     "web",
+     "api",
+     "svc",
+     "db"
+    ],
+    "note": "Decision saved; role check uses the request body."
+   },
+   {
+    "id": "notify",
+    "label": "Email and refresh",
+    "focus": [
+     "svc",
+     "mail",
+     "web",
+     "user"
+    ],
+    "note": "Email only on reject; list refetched."
+   }
+  ]
+ },
+ "participants": [
+  {
+   "id": "user",
+   "type": "external",
+   "label": "Approver",
+   "sublabel": "AC-approve"
+  },
+  {
+   "id": "web",
+   "type": "frontend",
+   "label": "Web App",
+   "sublabel": "React"
+  },
+  {
+   "id": "api",
+   "type": "backend",
+   "label": "UserRoleController",
+   "sublabel": "internal API"
+  },
+  {
+   "id": "svc",
+   "type": "backend",
+   "label": "UserRoleService",
+   "sublabel": "role check + update"
+  },
+  {
+   "id": "db",
+   "type": "database",
+   "label": "ACM DB",
+   "sublabel": "USER_ROLE"
+  },
+  {
+   "id": "mail",
+   "type": "messagebus",
+   "label": "Email",
+   "sublabel": "reject only"
+  }
+ ],
+ "segments": [
+  {
+   "from": 150,
+   "to": 295,
+   "label": "Load list"
+  },
+  {
+   "from": 300,
+   "to": 420,
+   "label": "Decide"
+  },
+  {
+   "from": 425,
+   "to": 520,
+   "label": "Notify + refresh"
+  }
+ ],
+ "messages": [
+  {
+   "id": "open-menu",
+   "from": "user",
+   "to": "web",
+   "y": 160,
+   "label": "open Approver Action",
+   "variant": "default"
+  },
+  {
+   "id": "view-post",
+   "from": "web",
+   "to": "api",
+   "y": 190,
+   "label": "POST viewRequestByApproverId",
+   "variant": "emphasis"
+  },
+  {
+   "id": "view-svc",
+   "from": "api",
+   "to": "svc",
+   "y": 220,
+   "label": "findAllApproverUserRole",
+   "variant": "default"
+  },
+  {
+   "id": "view-query",
+   "from": "svc",
+   "to": "db",
+   "y": 250,
+   "label": "status SUPPORTED + approver",
+   "variant": "emphasis"
+  },
+  {
+   "id": "view-ret",
+   "from": "api",
+   "to": "web",
+   "y": 280,
+   "label": "200 grouped list",
+   "variant": "return"
+  },
+  {
+   "id": "click",
+   "from": "user",
+   "to": "web",
+   "y": 315,
+   "label": "Approve / Reject",
+   "variant": "default"
+  },
+  {
+   "id": "action-post",
+   "from": "web",
+   "to": "api",
+   "y": 345,
+   "label": "POST approverUserRoleAction",
+   "variant": "emphasis"
+  },
+  {
+   "id": "action-svc",
+   "from": "api",
+   "to": "svc",
+   "y": 375,
+   "label": "role check from body (gap)",
+   "variant": "security"
+  },
+  {
+   "id": "save",
+   "from": "svc",
+   "to": "db",
+   "y": 405,
+   "label": "save APPROVED/REJECTED",
+   "variant": "emphasis"
+  },
+  {
+   "id": "mail",
+   "from": "svc",
+   "to": "mail",
+   "y": 435,
+   "label": "email on REJECT only",
+   "variant": "dashed"
+  },
+  {
+   "id": "action-ret",
+   "from": "api",
+   "to": "web",
+   "y": 470,
+   "label": "200 + refetch list",
+   "variant": "return"
+  },
+  {
+   "id": "gone",
+   "from": "web",
+   "to": "user",
+   "y": 505,
+   "label": "request leaves list",
+   "variant": "return"
+  }
+ ],
+ "activations": [
+  {
+   "participant": "web",
+   "from": 180,
+   "to": 510,
+   "type": "frontend"
+  },
+  {
+   "participant": "api",
+   "from": 185,
+   "to": 475,
+   "type": "backend"
+  },
+  {
+   "participant": "svc",
+   "from": 215,
+   "to": 440,
+   "type": "backend"
+  },
+  {
+   "participant": "db",
+   "from": 245,
+   "to": 410,
+   "type": "database"
+  }
+ ],
+ "cards": [
+  {
+   "dot": "emerald",
+   "title": "Matches flow",
+   "items": [
+    "List of SUPPORTED requests per approver",
+    "Approve/Reject saved as APPROVED/REJECTED",
+    "Request disappears after refetch"
+   ]
+  },
+  {
+   "dot": "rose",
+   "title": "Gap",
+   "items": [
+    "No email on approve (FSD BR-AA-003)",
+    "Role check trusts the request body",
+    "Remarks overwritten with null"
+   ]
+  },
+  {
+   "dot": "orange",
+   "title": "To verify",
+   "items": [
+    "Authentication on these endpoints at runtime",
+    "Transaction scope of update plus email",
+    "Which deck applies for approval email"
+   ]
+  }
+ ]
+}

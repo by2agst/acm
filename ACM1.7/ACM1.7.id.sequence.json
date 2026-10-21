@@ -1,0 +1,179 @@
+{
+ "schema_version": 1,
+ "diagram_type": "sequence",
+ "meta": {
+  "title": "ACM1.7 Assign Function ke Role",
+  "output": "ACM1.7/ACM1.7.id.html",
+  "viewBox": [
+   1080,
+   620
+  ],
+  "column_fit": "spread",
+  "animation": "trace",
+  "quality_profile": "showcase"
+ },
+ "participants": [
+  {
+   "id": "staff",
+   "type": "external",
+   "label": "Staff",
+   "sublabel": "user AC-ADMIN"
+  },
+  {
+   "id": "web",
+   "type": "frontend",
+   "label": "Web UI",
+   "sublabel": "React"
+  },
+  {
+   "id": "api",
+   "type": "backend",
+   "label": "Role Function API",
+   "sublabel": "controller"
+  },
+  {
+   "id": "svc",
+   "type": "backend",
+   "label": "RoleFunctionService",
+   "sublabel": "@Transactional"
+  },
+  {
+   "id": "db",
+   "type": "database",
+   "label": "ACM_ROLE_FUNCTION",
+   "sublabel": "table"
+  }
+ ],
+ "segments": [
+  {
+   "from": 150,
+   "to": 325,
+   "label": "Pilih role"
+  },
+  {
+   "from": 335,
+   "to": 400,
+   "label": "Edit + submit"
+  },
+  {
+   "from": 405,
+   "to": 535,
+   "label": "Simpan"
+  }
+ ],
+ "messages": [
+  {
+   "from": "staff",
+   "to": "web",
+   "y": 160,
+   "label": "buka Role Function Mapping",
+   "variant": "default"
+  },
+  {
+   "from": "web",
+   "to": "api",
+   "y": 190,
+   "label": "POST viewRoles (search)",
+   "variant": "emphasis"
+  },
+  {
+   "from": "api",
+   "to": "web",
+   "y": 220,
+   "label": "daftar role",
+   "variant": "return"
+  },
+  {
+   "from": "staff",
+   "to": "web",
+   "y": 250,
+   "label": "klik edit",
+   "variant": "default"
+  },
+  {
+   "from": "web",
+   "to": "api",
+   "y": 280,
+   "label": "viewRoleFunctionMappings",
+   "variant": "emphasis"
+  },
+  {
+   "from": "api",
+   "to": "web",
+   "y": 310,
+   "label": "function ter-assign",
+   "variant": "return"
+  },
+  {
+   "from": "staff",
+   "to": "web",
+   "y": 345,
+   "label": "pilih function + Submit",
+   "variant": "default"
+  },
+  {
+   "from": "web",
+   "to": "api",
+   "y": 380,
+   "label": "POST mapRoleFunctions",
+   "variant": "emphasis"
+  },
+  {
+   "from": "api",
+   "to": "svc",
+   "y": 415,
+   "label": "tanpa cek AC-ADMIN",
+   "variant": "dashed"
+  },
+  {
+   "from": "svc",
+   "to": "db",
+   "y": 450,
+   "label": "tambah/hapus baris + audit",
+   "variant": "emphasis"
+  },
+  {
+   "from": "svc",
+   "to": "web",
+   "y": 485,
+   "label": "pesan updated",
+   "variant": "return"
+  },
+  {
+   "from": "web",
+   "to": "staff",
+   "y": 520,
+   "label": "kembali ke daftar role",
+   "variant": "return"
+  }
+ ],
+ "cards": [
+  {
+   "dot": "emerald",
+   "title": "Sesuai flow",
+   "items": [
+    "Search, edit, tambah/hapus, submit jalan end to end",
+    "Daftar submit jadi daftar lengkap role",
+    "Tanpa langkah approval"
+   ]
+  },
+  {
+   "dot": "rose",
+   "title": "Gap",
+   "items": [
+    "Backend tidak cek role AC-ADMIN",
+    "List kosong dan function app lain diterima",
+    "URL langsung tanpa guard role"
+   ]
+  },
+  {
+   "dot": "orange",
+   "title": "Perlu verifikasi",
+   "items": [
+    "Login AAD portal di luar repo ini",
+    "Tampilan modal error di route ini",
+    "Gateway/WAF di depan API"
+   ]
+  }
+ ]
+}

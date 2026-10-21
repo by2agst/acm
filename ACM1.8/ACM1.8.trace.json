@@ -1,0 +1,91 @@
+{
+ "story": "ACM1.8",
+ "code_commit": "90482ed",
+ "flow_ref": "ACM_FSD _v1.2.pdf section 1.8 (p.17-18, wins); ACM_Functional_Document_v1.0.pdf section 13 (p.16-17); HCL_CAC.pptx has no supporter slide",
+ "code_summary": "UI: LayoutACM.js menyaring dropdown dengan accessRole AC-support, Containers/ACM/index.js memuat list lewat ViewSupporterApplicationSaga, DataTable.js (module SPA) merender tabel dan tombol Approve/Reject yang dikirim lewat SupporterActionSaga. API: UserRoleController /viewRequestBySupporterId dan /supporterUserRoleAction -> UserRoleService (query PENDING, set SUPPORTED/REJECTED, kirim email). Audit lewat UserRoleTransactionService.createSupporterAction (AOP).",
+ "note": "Flow baseline: FSD v1.2 menang; Functional Document v1.0 melengkapi step email (BR-SA-003/004 juga ada di FSD). Code dari git commit 90482ed di project root. Celah: remarks tidak dikirim UI dan ditimpa null di UserRoleService.java:401. Evidence % dihitung ulang dari fit.",
+ "recommendation": "Klaim dengan catatan: alur list pending, Approve/Reject dan update status terbukti di code. Role gate AC-SUPPORT hanya tegas di UI; server menerima AC-admin dan identitas dari body tanpa JWT, jadi 'hanya AC-SUPPORT' tidak boleh diklaim penuh.",
+ "steps": [
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf",
+   "slide": "p.17",
+   "step": "Staff login ke Staff Portal via AAD dan masuk ke ACM",
+   "repo": "spms_common_iz_web_app-main",
+   "code_ref": "spms_common_iz_web_app-main/src/Navigation/RoutesConfig.js:32",
+   "fit": "Sebagian",
+   "detail": "RoutesConfig.js:28-37 memanggil instance.loginRedirect(loginRequest) (AAD) kalau belum authenticated. Masuk ke halaman ACM dijaga PrivateRouteACMConfig (spms_common_iz_web_app-main/src/Navigation/PrivateRouteConfig.js:10-35) yang hanya cek user punya aplikasi ACM, bukan role AC-support. Validasi JWT/AAD di API tidak dipasang untuk endpoint supporter (lihat step 6). Staff Portal landing page ada di luar repo ini, cannot verify from repo."
+  },
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf",
+   "slide": "p.17",
+   "step": "Staff memilih Supporter Action dari dropdown Application Module (hanya role AC-SUPPORT)",
+   "repo": "spms_common_iz_web_app-main",
+   "code_ref": "spms_common_iz_web_app-main/src/Utility/constant.js:22",
+   "fit": "Sebagian",
+   "detail": "constant.js:22 mendefinisikan opsi 'Supporter Action' dengan accessRole 'AC-support'. LayoutACM.js:49-51 hanya memasukkan opsi ke dropdown kalau roleList user (dari LoginUserRoleState) berisi accessRole itu. Pilihan 'SPA' redirect ke /acm/supporter-action (spms_common_iz_web_app-main/src/Packages/Common.js:21-22; RoutesConfig.js:178). Catatan: ini filter di UI; URL langsung tetap bisa dibuka (route hanya cek aplikasi ACM). Gerbang hanya di menu UI dan route tidak cek role (PrivateRouteConfig.js:25-30), sehingga dinilai Sebagian, sama seperti ACM1.7 step 2 dan ACM1.9 step 1."
+  },
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf",
+   "slide": "p.17",
+   "step": "System memuat semua pending application (assign role) yang perlu di-approve",
+   "repo": "spms_common_iz_api_app-main",
+   "code_ref": "spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/service/UserRoleService.java:254",
+   "fit": "Sesuai",
+   "detail": "Containers/ACM/index.js:71 dispatch viewSupporterApplicationList({userId: userName}) saat moduleType 'SPA'; ViewSupporterApplicationSaga.js:17-22 POST ke VIEW_REQUEST_BY_SUPPORTER_ID (ServiceConfig.js:70). UserRoleController.java:48-52 -> UserRoleService.viewRequestBySupporterId (UserRoleService.java:243) -> findAllSupporterUserRole yang query userRoleRepository.findBySupporterAndStatusIn(user, [PENDING]) (UserRoleService.java:254). Hasil di-group per userId (UserRoleService.java:249). Path lengkap UI: spms_common_iz_web_app-main/src/Containers/ACM/index.js:71. Daftar difilter per supporter (userId dari body, UserRoleService.java:245,254), bukan semua pending global."
+  },
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf",
+   "slide": "p.17",
+   "step": "Tabel menampilkan URAMS Id, Name, Department, Email, Mobile, Role Assigned, Remarks, Actions",
+   "repo": "spms_common_iz_web_app-main",
+   "code_ref": "spms_common_iz_web_app-main/src/Utility/constant.js:77",
+   "fit": "Sesuai",
+   "detail": "ApproverSupporterTableHeaderName (constant.js:77-86) berisi persis 8 kolom itu. ApproverSupporterList.js:17 meneruskan header ke DataTable; DataTable.js:696-740 merender baris SPA: userId, fullName, department/sectionId, email, phoneNumber, daftar roleId, remarks, tombol Approve/Reject."
+  },
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf",
+   "slide": "p.17",
+   "step": "Staff klik Approve atau Reject, backend update application di DB",
+   "repo": "spms_common_iz_api_app-main",
+   "code_ref": "spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/service/UserRoleService.java:399",
+   "fit": "Sesuai",
+   "detail": "DataTable.js:126-154 membangun formData status 'REJECTED' atau 'SUPPORTED' dan dispatch supporterUserAction; SupporterActionSaga.js:19-27 POST ke SUPPORTER_USER_ACTION (ServiceConfig.js:71). UserRoleController.java:54-58 -> UserRoleService.supporterUserRoleAction (UserRoleService.java:321) -> mapSupporterUserRoleAction yang set status (UserRoleService.java:399), supportedDate (400), remarks (401) dan userRoleRepository.save. Approve di UI memang mengubah status ke SUPPORTED (bukan APPROVED), sesuai Functional Document 13.2 (p.16); final APPROVED ada di step Approver. UI tidak mengirim remarks, sedangkan UserRoleService.java:401 menimpa remarks dengan request.getRemarks() (null), jadi Remarks yang sudah ada (diisi admin saat create) terhapus saat supporter approve atau reject (cacat yang sama dengan ACM1.9 step 4)."
+  },
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf",
+   "slide": "p.17-18",
+   "step": "Hanya staff dengan role AC-SUPPORT yang boleh melakukan aksi ini",
+   "repo": "spms_common_iz_api_app-main",
+   "code_ref": "spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/service/UserRoleService.java:349",
+   "fit": "Sebagian",
+   "detail": "validateSupporterUserOrNot (UserRoleService.java:340) dipanggil di UserRoleService.java:323 dengan request.getSupportedBy() dari body, dan meloloskan role 'AC-support' ATAU 'AC-admin' (UserRoleService.java:349). Jadi admin juga bisa act, beda dari 'hanya AC-SUPPORT'. Identitas diambil dari body, bukan dari JWT; WebSecurityConfig.java:124 memakai anyRequest().permitAll() dan kedua endpoint supporter tidak ada di daftar filter JWT (spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/security/jwt/ACMAuthTokenFilter.java:42-49). Tidak ada cek bahwa supportedBy sama dengan supporter yang ditunjuk di baris UserRole atau dengan user yang login. Di uat/prd chain-nya WebSecurityConfig.java:167 (requestMatchers(\"/**\").permitAll())."
+  },
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf",
+   "slide": "p.17",
+   "step": "Setelah approve/reject, request hilang dari daftar supporter (page reload)",
+   "repo": "spms_common_iz_web_app-main",
+   "code_ref": "spms_common_iz_web_app-main/src/Sagas/ACMSupporter/SupporterActionSaga.js:29",
+   "fit": "Sesuai",
+   "detail": "Setelah aksi sukses, SupporterActionSaga.js:29 langsung dispatch viewSupporterApplicationList lagi, dan query backend hanya mengambil status PENDING (UserRoleService.java:254), jadi baris yang sudah SUPPORTED/REJECTED hilang. Yang terjadi re-fetch, bukan reload halaman penuh. Kalau daftar jadi kosong, API melempar NotExistsException (UserRoleService.java:256) yang di-handle jadi HTTP 200 berisi string (spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/exception/CustomControllerAdvice.java:27-30); ApproverSupporterList.js:6 menangani data string sebagai daftar kosong."
+  },
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf ; ACM_Functional_Document_v1.0.pdf",
+   "slide": "FSD p.18 (BR-SA-003, BR-SA-004); Functional Document 13.2-13.3 (p.16-17)",
+   "step": "Notifikasi email: approver setelah Supported, pemohon (admin) setelah Rejected",
+   "repo": "spms_common_iz_api_app-main",
+   "code_ref": "spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/service/UserRoleService.java:331",
+   "fit": "Sesuai",
+   "detail": "Step ini ada di FSD 1.8 (BR-SA-003 dan BR-SA-004, p.18) dan di Functional Document 13.2/13.3. supporterUserRoleAction mengirim acm_approver.json ke email approver kalau status SUPPORTED (UserRoleService.java:330-331) dan acm_admin.json ke email admin pembuat request kalau REJECTED (UserRoleService.java:332-334). Email terkirim tidak bisa diverifikasi dari repo (tergantung konfigurasi SMTP per environment)."
+  },
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf",
+   "slide": "p.17",
+   "step": "Kalau gagal ambil/kirim data, staff melihat modal pop up dengan pesan error",
+   "repo": "spms_common_iz_web_app-main",
+   "code_ref": "spms_common_iz_web_app-main/src/Services/axios.configuration.js:43",
+   "fit": "Sebagian",
+   "detail": "Interceptor axios.configuration.js:43-48 men-dispatch setApiErrorTrue untuk status 404/500 dan setApiError400 untuk 400; ContentLayout.js:19 menampilkan Modal 'Something went wrong' dengan teks generik (ContentLayout.js:11-15). Modal muncul, tapi pesannya generik, bukan pesan spesifik. Error lain (misalnya 403) tidak memunculkan modal, dan state error di ACMSupporterReducer.js:45-49 tidak dibaca komponen mana pun (grep GetSupporterListState)."
+  }
+ ]
+}

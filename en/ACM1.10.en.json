@@ -1,0 +1,49 @@
+{
+ "story": "ACM1.10",
+ "flow_ref": "ACM_FSD _v1.2.pdf section 1.10 (p.21); ACM_Functional_Document_v1.0.pdf section 6 menu list only; HCL_CAC.pptx (audit mentioned, high level). The FSD wins.",
+ "code_summary": "The Audit Trail page (React) calls POST /acm/v1/audit/enquiry; the server filters user-role transactions by action, user and date. Export is a CSV built in the browser.",
+ "note": "Evidence is computed from code, not document claims. AC-ADMIN is checked only in the UI menu. The roleId value in the database cannot be verified from the repo. Decks later than FSD v1.2 are unknown. Code refs are from a zip snapshot.",
+ "recommendation": "Claim partially: filters, search and CSV export work for user-role changes. Needs fixing: a server-side AC-ADMIN check, a real Feature filter, coverage of the other modules, and .xlsx export. Also fix ACMAuthTokenFilter so the isValidToken result is used and the filter covers /acm/v1/audit/**.",
+ "steps": [
+  {
+   "step": "Staff logs in to Staff Portal; the system authenticates with AAD and validates access to ACM",
+   "detail": "ACMAuthTokenFilter calls azureJwtValidate.isValidToken (line 70) but discards its boolean result, so a token that fails validation is still accepted; the filter only runs for 8 paths (lines 42-49) and /acm/v1/audit/enquiry is not among them, so the audit endpoint is not authenticated by this filter. The AAD validation that rejects a token is in AuthService.java:127-133 (prd profile only); the exchange of the AAD token for an ACM JWT is in AuthService.java:112-171. In the web app, PrivateRouteACMConfig only allows the route if the user has a role with applicationId 'ACM' (spms_common_iz_web_app-main/src/Navigation/PrivateRouteConfig.js:14-30). The Staff Portal landing page and the Microsoft login screen are not in this repo (cannot verify from repo)."
+  },
+  {
+   "step": "Only staff with the AC-ADMIN role can access the Audit Trail module",
+   "detail": "The 'Audit Trail' dropdown option has accessRole 'AC-admin' (Utility/constant.js:19) and LayoutACM.js:49-53 shows it only if the user's roleId matches that value exactly (case-sensitive); whether the database roleId is 'AC-ADMIN' or 'AC-admin' cannot be verified from the repo. However, the route /acm/audit-trails-enquiry is only wrapped in PrivateRouteACMConfig (RoutesConfig.js:183-188), which checks ACM access, not AC-ADMIN. On the server, AuditTrailEnquiryController has no role check (AuditTrailEnquiryController.java:21-34) and WebSecurityConfig uses permitAll for /** on dev/local/sit (anyRequest permitAll, WebSecurityConfig.java:113-124) and uat/prd (requestMatchers(\"/**\").permitAll(), WebSecurityConfig.java:167). So the AC-ADMIN restriction is only in the UI menu; the only server-side AC-admin check is in PrivilegedActivityReportController (PrivilegedActivityReportController.java:54-59), so a non-admin caller who can reach the /acm/v1/audit/enquiry endpoint can fetch the data (cannot verify from repo: an API gateway in front of the app). Whether the page can be opened directly by URL cannot be verified."
+  },
+  {
+   "step": "Staff selects Audit Trail; the system shows the Action, Staff Name, Feature and Date Range filters",
+   "detail": "Containers/ACM/index.js:318-319 renders AuditTrailEnquiryPage when moduleType is 'AT'. index.js:115-126 renders SelectAction, StaffInputField, SelectFeature, SelectModule (an extra filter beyond the flow) and DateRangeFilters."
+  },
+  {
+   "step": "Staff filters by Action (Add, Modify, Delete)",
+   "detail": "The UI options All/ADD/MODIFY/DELETE are in spms_common_iz_web_app-main/src/Utility/constant.js:37-43 and sent as 'action' (index.js:58). The server validates against the ActionType enum (AuditTrailEnquiryService.java:63-70) and filters results by action, or returns all for 'ALL' (AuditTrailEnquiryServiceHelper.java:36-37). The UI value 'All' is upper-cased to 'ALL' (index.js:58)."
+  },
+  {
+   "step": "Staff filters by staff name",
+   "detail": "StaffInput.js:20 calls the name lookup (END_POINTS.GET_STAFF_NAME -> /acm/v1/user/viewAllUserNames, ServiceConfig.js:73; UserController.java:80-85); the selected userId goes in the payload, 'ALL' if empty (index.js:62). UserRoleTransactionService.java:199-204 uses the per-userId query or the all-users query (UserRoleTransactionRepository.java:22-26)."
+  },
+  {
+   "step": "Staff filters by Feature",
+   "detail": "The UI offers only one Feature option, 'Manage User-Role' (USERROLE); the others are commented out (Utility/constant.js:52-59). The server only validates the feature value against the ManageFeatures enum (AuditTrailEnquiryService.java:56-59; ManageFeatures.java:3-4), but AuditTrailEnquiryServiceHelper.getAuditTrailEnquiryData never uses it; data always comes from the user-role transaction table (AuditTrailEnquiryServiceHelper.java:66-67). So 'Feature' does not actually filter. Because the Feature value does not influence the result, the step is graded Beda dari flow."
+  },
+  {
+   "step": "Staff filters by date range",
+   "detail": "The UI requires fromDate and toDate before Search (index.js:83-86). The server widens the range from the start of fromDate to 23:59:59.999 of toDate (AuditTrailEnquiryServiceHelper.java:63-65) and the query uses effectiveDate between (UserRoleTransactionRepository.java:22-26)."
+  },
+  {
+   "step": "Staff clicks Search; the system fetches all details matching the filters and shows them in a table",
+   "detail": "Clicking Search sends a POST to GET_AUDIT_REPORT (index.js:93; GetAuditReportSaga.js:17-18; ServiceConfig.js:74) -> AuditTrailEnquiryController.java:29-34 -> AuditTrailEnquiryService.getAuditTrailEnquiry (lines 29-38) -> helper. Results are enriched with role name, user name and application name from the transaction tables (AuditTrailEnquiryServiceHelper.java:52-78) and shown in the DataTable with module 'AT' (index.js:157-162). An empty result is a valid state (AuditTrailEnquiryService.java:36). But the only data source is UserRoleTransaction; the other transaction services (ApplicationTransactionService, UserTransactionService, FunctionTransactionService, etc.) record changes that this endpoint never reads, so 'all details' of ACM activity is not met."
+  },
+  {
+   "step": "Staff clicks Export to Excel; all data is downloaded as an Excel file",
+   "detail": "The 'Export to Excel' button uses CSVLink (react-csv) with filename 'AuditTrailReport.csv' (index.js:172-193), shown only when there are results (index.js:171). The data is the auditReportList already on screen, built in the browser, not a server export endpoint. The .csv format opens in Excel but is not .xlsx. Separately, a scheduler job emails the audit trail CSV (service/scheduler/AuditTrailFileSchedulerService.java:39), outside this flow; monthly only in the prd profile (application-prd.yml:13), weekly in uat, daily in sit/dev."
+  },
+  {
+   "step": "If a problem occurs while retrieving data, staff sees a modal pop-up with an error message",
+   "detail": "The axios interceptor triggers setApiErrorTrue for status 404/500 (axios.configuration.js:43-44) and setApiError400 for 400 (lines 46-47); ContentLayout.js:6-23 shows a 'Something went wrong' Modal with a generic message. Other statuses (e.g. 403 after retry, 401) do not trigger the modal. GetAuditReportSaga only stores the error in state (GetAuditReportSaga.js:34-35, AcmAuditTrailReducer.js:31-35) with no message on the page. A failed server validation returns HTTP 400 (CustomControllerAdvice.java:32-35); staff see the generic modal (ContentLayout.js:13-15), the technical server message is not displayed."
+  }
+ ]
+}

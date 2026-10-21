@@ -1,0 +1,100 @@
+{
+ "story": "ACM1.5",
+ "code_commit": "90482ed",
+ "flow_ref": "ACM_FSD _v1.2.pdf section 1.5 (p.12, wins); ACM_Functional_Document_v1.0.pdf section 8 (p.9-11); HCL_CAC.pptx (images only, high-level, no function-level detail).",
+ "code_summary": "Manage Function ada end-to-end: UI di ManageFunctions/ (Function*.js) memakai redux-saga ke FunctionController (/acm/v1/function/*), FunctionService, entity ACM_FUNCTION, plus audit lewat FunctionTransactionService. Gap: tidak ada sort, edit tidak terbatas description, pembatasan AC-ADMIN hanya di menu UI, error modal generik.",
+ "note": "Baseline: kode zip snapshot (git commit 90482ed dari git rev-parse). FSD v1.2 menang atas Functional Document v1.0. HCL_CAC.pptx hanya gambar tingkat tinggi dan tidak merinci function. Deck setelah ini tidak diketahui. Batas panjang field (name/ID 100, description 200) hanya ada di UI; backend menerima description 256. Delete adalah hard delete dengan cascade ke role-function mapping.",
+ "recommendation": "Perbaiki sebelum diklaim penuh: tambah cek role AC-admin di FunctionController, batasi update ke description (atau konfirmasi dengan FSD bahwa URL boleh), tambah sort, dan tampilkan pesan error backend di modal.",
+ "steps": [
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf",
+   "slide": "p.12 (1.5)",
+   "step": "Staff login Staff Portal, landing page, masuk ACM jika punya role terkait",
+   "repo": "spms_common_iz_web_app-main",
+   "code_ref": "spms_common_iz_web_app-main/src/Navigation/PrivateRouteConfig.js:10",
+   "fit": "Sebagian",
+   "detail": "PrivateRouteACMConfig (PrivateRouteConfig.js:10-33) hanya mengizinkan route /acm/manage-function (RoutesConfig.js:141-146) kalau user punya akses application ACM di LoginUserRoleState; selain itu redirect ke \"/\". Autentikasi AAD / Staff Portal tidak terlihat di repo ini: cannot verify from repo."
+  },
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf",
+   "slide": "p.12 (1.5)",
+   "step": "Hanya staff AC-ADMIN yang bisa Manage Function",
+   "repo": "spms_common_iz_web_app-main",
+   "code_ref": "spms_common_iz_web_app-main/src/Components/LayoutACM.js:49",
+   "fit": "Sebagian",
+   "detail": "Dropdown Application Module hanya menampilkan \"Manage Function\" kalau roleList user berisi AC-admin (LayoutACM.js:49-54, constant.js:16 accessRole). Tapi route /acm/manage-function hanya cek akses ACM (PrivateRouteConfig.js:21-33), dan FunctionController.java:22-61 tidak punya cek role; WebSecurityConfig.java:124 dan :167 permitAll. Jadi pembatasan AC-ADMIN hanya di menu UI, bukan di API."
+  },
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf",
+   "slide": "p.12 (1.5)",
+   "step": "Pilih Manage Function: tabel Application Id, Module Id, Function Name, Function Id",
+   "repo": "spms_common_iz_web_app-main",
+   "code_ref": "spms_common_iz_web_app-main/src/Containers/ACM/ManageFunctions/FunctionTableView.js:29",
+   "fit": "Sesuai",
+   "detail": "Dropdown memanggil getFunctionList (ACM/index.js:68) -> FunctionsSaga.js:17 POST acm/v1/function/viewFunctions -> FunctionController.java:44-51 -> FunctionService.getFunctions (FunctionService.java:97-104, findAll). Tabel DataTable menampilkan Application ID, Module ID, Function Name, Function ID, Action (constant.js:87-93). Tidak ada kolom status; delete adalah hard delete (FunctionService.java:119), jadi \"kecuali deleted\" terpenuhi dengan sendirinya."
+  },
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf",
+   "slide": "p.12 (1.5)",
+   "step": "Search dan sort Function ID/Name, export hasil ke excel",
+   "repo": "spms_common_iz_web_app-main",
+   "code_ref": "spms_common_iz_web_app-main/src/Containers/ACM/ManageFunctions/FunctionTableView.js:28",
+   "fit": "Sebagian",
+   "detail": "Search ada: SearchBox (FunctionTableView.js:28) -> POST viewFunctions dengan searchText -> FunctionService.searchFunction (FunctionService.java:144-153, containing ID atau Name). Export ada: ExportToExcel (FunctionTableView.js:41-45, Functions.csv, berisi data list yang sedang dimuat; format CSV, bukan .xlsx). Sort: tidak ditemukan code sort di DataTable.js maupun query backend."
+  },
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf",
+   "slide": "p.12 (1.5); ACM_Functional_Document_v1.0.pdf p.9-10 (8.1-8.2)",
+   "step": "Klik Add New Function: form (Application, Module, Function Name, Function ID, URL, Description opsional)",
+   "repo": "spms_common_iz_web_app-main",
+   "code_ref": "spms_common_iz_web_app-main/src/Containers/ACM/ManageFunctions/FunctionAddEdit.js:29",
+   "fit": "Sesuai",
+   "detail": "Tombol Add New Function (FunctionTableView.js:38) -> showDataTablePage isNew (FunctionTableView.js:14-16) memuat FunctionAddEdit.js:29-42 dengan dropdown Application, Module, Function Name, Function ID (maxlength 100), URL (maxlength 100), Description (maxlength 200, optional). Validasi Yup di SechmaValidation.js:31-43 (semua wajib kecuali description, URL pakai regex). Catatan: backend FunctionCreateRequest.java menerima description sampai 256 dan tidak punya @Size untuk name/ID, jadi batas 200/100 hanya ditegakkan di UI."
+  },
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf",
+   "slide": "p.12 (1.5); ACM_Functional_Document_v1.0.pdf p.11 (8.4)",
+   "step": "Submit: backend membuat function di DB",
+   "repo": "spms_common_iz_api_app-main",
+   "code_ref": "spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/service/FunctionService.java:64",
+   "fit": "Sesuai",
+   "detail": "ACM/index.js:206-226 kirim payload -> FunctionPostSaga.js:24 POST acm/v1/function/createFunction -> FunctionController.java:29-32 -> FunctionService.createFunction (FunctionService.java:64-73): tolak kalau functionId sudah ada (ACMEntityAlreadyExistsException, 400), cari module, save ke ACM_FUNCTION (Function.java:17). Audit: FunctionTransactionService.java:37-43 menyimpan salinan ke tabel transaction setelah create."
+  },
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf",
+   "slide": "p.12 (1.5); ACM_Functional_Document_v1.0.pdf p.10 (8.2)",
+   "step": "Edit function: hanya description yang boleh diubah",
+   "repo": "spms_common_iz_web_app-main",
+   "code_ref": "spms_common_iz_web_app-main/src/Containers/ACM/ManageFunctions/FunctionAddEdit.js:31",
+   "fit": "Beda dari flow",
+   "detail": "FSD: edit hanya description. Di UI saat edit, Application, Module, Function Name, Function ID disabled (FunctionAddEdit.js:29-32), tapi URL bisa diedit lewat tombol edit (FunctionAddEdit.js:33-40, isEditConfirm). Backend FunctionService.updateFunction (FunctionService.java:75-88) mengubah functionName, description, functionUrl tanpa cek apa yang berubah, jadi API menerima ganti nama dan URL. Functional Document p.10 hanya mengunci Application, Module, Name, ID, jadi URL boleh diedit menurut deck itu; FSD v1.2 menang."
+  },
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf",
+   "slide": "p.12 (1.5)",
+   "step": "Delete function setelah konfirmasi modal pop-up",
+   "repo": "spms_common_iz_web_app-main",
+   "code_ref": "spms_common_iz_web_app-main/src/Components/DataTable.js:174",
+   "fit": "Sesuai",
+   "detail": "Ikon delete (DataTable.js:369-374) -> handleRemove (DataTable.js:174-183) membuka ConfirmModal DeleteContent (ConfirmModal.js:98-117). Setelah konfirmasi, handleDelete (DataTable.js:185-195) -> DeleteFunctionSaga.js:19 POST deleteFunction -> FunctionService.deleteFunction (FunctionService.java:116-123). Perlu diketahui: ini hard delete (removeByFunctionId) dan Function.java:42 punya cascade ALL + orphanRemoval ke RoleFunction, jadi mapping role-function ikut terhapus; sebelum itu FunctionTransactionService.java:100-113 menyimpan salinan function dan role-function ke tabel transaction."
+  },
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf",
+   "slide": "p.12 (1.5)",
+   "step": "Tidak ada proses approval untuk create, update, delete",
+   "repo": "spms_common_iz_api_app-main",
+   "code_ref": "spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/controller/FunctionController.java:29",
+   "fit": "Sesuai",
+   "detail": "createFunction, updateFunction, deleteFunction (FunctionController.java:29-37, 53-56) langsung menulis ke ACM_FUNCTION lewat FunctionService tanpa status pending atau langkah approver; entity Function.java tidak punya kolom status. FunctionTransactionService hanya mencatat riwayat."
+  },
+  {
+   "flow_file": "ACM_FSD _v1.2.pdf",
+   "slide": "p.12 (1.5) Exceptions",
+   "step": "Error saat ambil/kirim data: tampil modal pop-up dengan pesan error",
+   "repo": "spms_common_iz_web_app-main",
+   "code_ref": "spms_common_iz_web_app-main/src/Services/axios.configuration.js:43",
+   "fit": "Sebagian",
+   "detail": "Interceptor axios (axios.configuration.js:43-47) men-set apiError untuk status 404/500 dan apiError400 untuk 400; ContentLayout.js:11-15 menampilkan Modal dengan teks umum (\"We are unable to display the requested page...\" / \"...retrieve the record...\"). Pesan spesifik backend (misal \"function already exists\") tidak ditampilkan; state functionState.error di FunctionsReducer.js:33-37 tidak dibaca komponen mana pun. Error status lain (mis. 401) tidak menampilkan modal."
+  }
+ ]
+}

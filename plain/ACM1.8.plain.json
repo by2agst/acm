@@ -1,0 +1,59 @@
+{
+ "story": "ACM1.8",
+ "steps": [
+  {
+   "en": "Staff signs in through the staff portal",
+   "id": "Staff login lewat portal staff",
+   "why_en": "Only the ACM sign-in guard is proven; the portal landing page is outside this code.",
+   "why_id": "Hanya penjagaan masuk ACM yang terbukti; halaman utama portal ada di luar code ini."
+  },
+  {
+   "en": "Staff opens Supporter Action from the menu",
+   "id": "Staff membuka Supporter Action dari menu",
+   "why_en": "Only the menu is limited; nothing behind the screen checks the role.",
+   "why_id": "Hanya menu yang dibatasi; tidak ada pengecekan role di balik layar."
+  },
+  {
+   "en": "The system lists requests waiting for approval",
+   "id": "Sistem menampilkan daftar request yang menunggu persetujuan",
+   "why_en": "",
+   "why_id": ""
+  },
+  {
+   "en": "The list shows the user details and the role asked for",
+   "id": "Daftar menampilkan data user dan role yang diminta",
+   "why_en": "",
+   "why_id": ""
+  },
+  {
+   "en": "Staff approves or rejects and the status is saved",
+   "id": "Staff menyetujui atau menolak dan status tersimpan",
+   "why_en": "",
+   "why_id": ""
+  },
+  {
+   "en": "Only supporter staff may approve or reject",
+   "id": "Hanya staff supporter yang boleh menyetujui atau menolak",
+   "why_en": "The check is firm only on screen; behind it, admins also pass and the caller identity is not verified.",
+   "why_id": "Pengecekan tegas hanya di layar; di belakangnya admin juga lolos dan identitas pemanggil tidak diverifikasi."
+  },
+  {
+   "en": "Handled requests leave the waiting list",
+   "id": "Request yang sudah diproses hilang dari daftar tunggu",
+   "why_en": "",
+   "why_id": ""
+  },
+  {
+   "en": "The next reviewer or the requester gets an email",
+   "id": "Reviewer berikutnya atau pemohon dapat email",
+   "why_en": "",
+   "why_id": ""
+  },
+  {
+   "en": "A pop up shows when loading or saving fails",
+   "id": "Pop up muncul kalau memuat atau menyimpan gagal",
+   "why_en": "The pop up text is generic and not every error type triggers it.",
+   "why_id": "Teks pop up bersifat umum dan tidak semua jenis error memicunya."
+  }
+ ]
+}

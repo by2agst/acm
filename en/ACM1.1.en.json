@@ -1,0 +1,53 @@
+{
+ "story": "ACM1.1",
+ "flow_ref": "FSD v1.2 section 1.1 (ACM_FSD _v1.2.pdf p.4-5) wins; ACM_Functional_Document_v1.0.pdf section 6 (p.6-8) used for field rules; HCL_CAC.pptx is high-level only",
+ "code_summary": "The Manage Application flow works: list/search, add (duplicates refused), delete with confirmation and cascade to modules/roles/functions (ApplicationController.java, ApplicationService.java, Application.java). Gaps: no column sort, edit also allows the URL (not description only), the AC-ADMIN role is checked only in the UI menu, and the error modal is generic.",
+ "note": "Code baseline: git commit 90482ed (project root, contains all three repos). Decks: FSD v1.2 wins over Functional Document v1.0 (they differ: the FSD allows editing description only, the Functional Document allows editing the URL). The \"AC-admin\" role value in Utility/constant.js:12 and DB constraints cannot be verified from the repo. There are two module lists: Utility/constant.js:11 (used by LayoutACM, has accessRole) and constants/constant.js:119 (no accessRole).",
+ "recommendation": "Claim partially: 5 steps Sesuai, 5 Sebagian, 1 Beda dari flow. Fix before a full claim: restrict edit to description (UI and API), add an AC-ADMIN check on the server, add column sort, show specific error messages.",
+ "steps": [
+  {
+   "step": "Staff login via Staff Portal (AAD), land on ACM if the user has an ACM role",
+   "detail": "The route /acm/manage-application is wrapped in PrivateRouteACMConfig (PrivateRouteConfig.js:25-30): the user only gets in with ACM application access, otherwise redirected to \"/\". On the API, ACMAuthTokenFilter.java:42-49 validates the Azure AD JWT (AzureJwtValidate, lines 70-72) only for the listed login/role endpoints (getLoginUserRole etc.). The Staff Portal login itself is outside these repos (cannot verify from repo). The /acm/v1/application/* endpoints are not in that filter list. Note: the result of isValidToken is discarded (ACMAuthTokenFilter.java:70), so a token that fails validation is still accepted; the AAD validation that rejects a token is in AuthService.java:127-133 (prd profile only)."
+  },
+  {
+   "step": "Only staff with AC-ADMIN can use Manage Application (BR-MA-001)",
+   "detail": "The \"Manage Applications\" menu only shows if the user roleId matches accessRole: LayoutACM.js:44-53 filters ACM_MODULES_LIST (Utility/constant.js:12, accessRole \"AC-admin\") against the user roles in application ACM. This is UI-only gating: the route PrivateRouteConfig.js:25-27 only checks ACM access (not role), ApplicationController.java:24-63 has no role annotation, and WebSecurityConfig.java:124 (dev/local/sit) and :167 (uat/prd, requestMatchers(\"/**\").permitAll()) do not restrict /acm/v1/application. A direct API caller is not blocked on the server. Whether the stored roleId is \"AC-admin\" (lowercase) or \"AC-ADMIN\" as in the FSD cannot be verified from the repo (role data lives in the DB)."
+  },
+  {
+   "step": "Selecting Manage Application shows ID and Name of all current applications (none deleted)",
+   "detail": "Choosing menu MA triggers getApplicationList (Containers/ACM/index.js:64) then POST viewAllApplications (Sagas/Application/ApplicationSaga.js:18-25, ServiceConfig.js:31). The controller (ApplicationController.java:44-51) calls ApplicationService.getApplications (ApplicationService.java:90-97) = findAll. The table shows Application ID and Application Name (Utility/constant.js:74, DataTable.js:276-285), sorted by applicationName (Containers/ACM/index.js:280). Delete is a hard delete (ApplicationService.java:83) with no status column, so deleted applications are indeed not listed."
+  },
+  {
+   "step": "Staff can search and sort by ID and Name, and export the filtered data to Excel",
+   "detail": "Search exists: SearchBox (ApplicationTableView.js:38-41) sends searchText to viewAllApplications (ApplicationController.java:47-48) and the repository does contains on applicationId OR applicationName (ApplicationRepository.java:16). Export exists: ExportToExcel (ApplicationTableView.js:55-59, ExportToExcel.js:9-17) downloads a CSV (Applications.csv) of the searched data. User-driven sort does not exist: table headers are plain text (DataTable.js:262-272), only a fixed order by applicationName (Containers/ACM/index.js:280). The export is a CSV file, not .xlsx."
+  },
+  {
+   "step": "Staff clicks Add New Application and gets a form (Name, ID, URL, optional Description)",
+   "detail": "The \"Add New Application\" button (ApplicationTableView.js:52-54) calls handleAddNew (lines 23-25), which opens the form. The form (ApplicationAddEdit.js:32-42) has Application Name, Application ID, Description (isOptional, line 34) and URL."
+  },
+  {
+   "step": "Field rules: letters/spaces (loose regex), max 100 characters, description max 200, valid URL (BR-MA-003)",
+   "detail": "UI Yup validation (SechmaValidation.js:3-17): applicationId and applicationName are required; the regex /^[aA-zZ\\s]+$/ (lines 6, 10) uses the range A-z, so besides letters and spaces it also lets [ \\ ] ^ _ and the backtick through, so \"letters/spaces only\" is not exact; description max 200 (line 7); url is required with a regex (lines 11-16); maxlength 100 on the input (ApplicationAddEdit.js:32-33,41). The URL regex (line 13) rejects a trailing slash (the last character must be a letter, digit or -) but is loose elsewhere (the dot is not escaped, the scheme is optional, _ passes). In the API there is only ApplicationCreateRequest.java:16-26: @NotBlank id/name/url, url @Size(max=100), description @Size(max=256); there is no letters-only check and no URL format check on the server. The FSD only states BR-MA-003 \"valid URL\" (p.5); the letters/spaces rule and the 100/200 limits are only in the Functional Document p.7."
+  },
+  {
+   "step": "Submit creates the application in the DB; a duplicate Application ID is refused; no approval",
+   "detail": "Submit (Containers/ACM/index.js:148-163,335-336) dispatches postApplication to POST createApplication (ApplicationPostSaga.js:18-24, ServiceConfig.js:32). ApplicationController.java:32-36 -> ApplicationService.createApplication (lines 47-62): findByApplicationId, if it exists throws ACMEntityAlreadyExistsException (line 50, handled as HTTP 400 in CustomControllerAdvice.java:32-35), otherwise saves to table ACM_APPLICATION (Application.java:17) with createdBy/createdDate. There is no status or approval step. After success the list is refreshed and the table is shown (ApplicationPostSaga.js:27-29). The DB unique constraint (Application.java:26 unique = true) cannot be verified from the repo."
+  },
+  {
+   "step": "Edit allows only the description to change (BR-MA-002)",
+   "detail": "The FSD wins: edit allows description only. Code: the UI locks Name and ID (isDisable={!acmData.isNew}, ApplicationAddEdit.js:32-33) but URL can be changed after clicking the edit icon (no confirmation dialog: TextInput.js:42-47, IconButton.js:6) (isEditConfirm, lines 35-41; this matches Functional Document p.7, not the FSD). API updateApplication (ApplicationService.java:64-78) sets applicationName, description and url (lines 67-69) without comparing to the old values, so Name can be changed through a direct API call. ApplicationUpdateRequest.java:14-22 requires applicationName."
+  },
+  {
+   "step": "Delete asks for confirmation in a modal, then deletes the application",
+   "detail": "The row delete button (DataTable.js:296-301) -> handleRemove opens the modal (lines 174-182). ConfirmModal DeleteContent (ConfirmModal.js:98-118) shows a confirmation text with Cancel/Yes buttons; Yes calls handleDelete (DataTable.js:185-192) -> deleteApplication -> POST deleteApplication (DeleteApplicationSaga.js:19-27). API: ApplicationController.java:59-63 -> ApplicationService.deleteApplication (lines 80-88, @Transactional) -> removeByApplicationId (ApplicationRepository.java:14). Note: if the ID does not exist the API answers HTTP 200 with a message (CustomControllerAdvice.java:27-30)."
+  },
+  {
+   "step": "Deleting an application also deletes its modules, roles and functions (BR-MA-004)",
+   "detail": "Entity Application has OneToMany to ApplicationModule and Role with orphanRemoval and CascadeType.ALL (Application.java:52-56); ApplicationModule to Function is also CascadeType.ALL (ApplicationModule.java:53-54); Role cascades to its child relations (Role.java:39,42). removeByApplicationId (derived delete) loads the entity and removes it so the JPA cascade runs. The modal text also warns about it (ConfirmModal.js:110). Foreign key constraints in Azure SQL cannot be verified from the repo. The runtime behaviour of the derived delete + cascade is not tested in this repo [Medium confidence]."
+  },
+  {
+   "step": "On a retrieve/submit problem, staff sees a modal with an appropriate error message",
+   "detail": "The axios interceptor (Services/axios.configuration.js:43-47) sets a global flag for status 404/500 and 400; ContentLayout.js:11-25 shows a \"Something went wrong\" modal with a generic text (\"...an error has occurred. Please try again later.\"). The API message (e.g. \"Application already exists ...\", CustomControllerAdvice.java:32-35) is not shown; the application-specific error is only stored in the reducer (ApplicationReducer.js:43-47) and no component reads it. Other cases (e.g. HTTP 200 NotExists) do not raise a modal."
+  }
+ ]
+}

@@ -1,0 +1,89 @@
+{
+ "story": "ACM1.7",
+ "steps": [
+  {
+   "en": "Staff logs in and the system checks identity and access",
+   "id": "Staff login dan sistem cek identitas serta akses",
+   "why_en": "Identity check only runs on a few paths and is skipped in UAT.",
+   "why_id": "Cek identitas hanya jalan di beberapa path dan dilewati di UAT."
+  },
+  {
+   "en": "Only admin staff see the Role Function Mapping menu",
+   "id": "Hanya staff admin yang melihat menu Role Function Mapping",
+   "why_en": "The menu is hidden, but opening the page address directly is not role-checked.",
+   "why_id": "Menu disembunyikan, tapi membuka alamat halaman langsung tidak dicek role."
+  },
+  {
+   "en": "System lists all roles with application, role id and name",
+   "id": "Sistem menampilkan semua role dengan aplikasi, id dan nama role",
+   "why_en": "",
+   "why_id": ""
+  },
+  {
+   "en": "Staff searches roles by id or name",
+   "id": "Staff mencari role berdasarkan id atau nama",
+   "why_en": "",
+   "why_id": ""
+  },
+  {
+   "en": "Roles are sorted by name; staff cannot choose the sort",
+   "id": "Role diurutkan menurut nama; staff tidak bisa memilih urutan",
+   "why_en": "Order is fixed by name and there is no sort by role id.",
+   "why_id": "Urutan tetap menurut nama dan tidak ada sort menurut role id."
+  },
+  {
+   "en": "Staff exports the shown role list to a spreadsheet file",
+   "id": "Staff mengekspor daftar role yang tampil ke file spreadsheet",
+   "why_en": "The export is a CSV file, not a real Excel file.",
+   "why_id": "Hasil ekspor berupa file CSV, bukan file Excel asli."
+  },
+  {
+   "en": "Edit opens a form showing the functions already given to the role",
+   "id": "Edit membuka form berisi function yang sudah dimiliki role",
+   "why_en": "",
+   "why_id": ""
+  },
+  {
+   "en": "Only functions of the role's application can be picked",
+   "id": "Hanya function milik aplikasi role yang bisa dipilih",
+   "why_en": "Only the screen limits the choice; the system does not check the application.",
+   "why_id": "Hanya layar yang membatasi pilihan; sistem tidak mengecek aplikasi."
+  },
+  {
+   "en": "Staff adds or removes functions in the selection",
+   "id": "Staff menambah atau menghapus function di pilihan",
+   "why_en": "",
+   "why_id": ""
+  },
+  {
+   "en": "At least one function must stay on the role",
+   "id": "Minimal satu function harus tetap ada di role",
+   "why_en": "Only the screen enforces this; the system accepts an empty list.",
+   "why_id": "Hanya layar yang menjaga ini; sistem menerima list kosong."
+  },
+  {
+   "en": "Submit saves the chosen list as the full function list of the role",
+   "id": "Submit menyimpan daftar pilihan sebagai daftar function lengkap role",
+   "why_en": "",
+   "why_id": ""
+  },
+  {
+   "en": "Changes apply directly with no approval step",
+   "id": "Perubahan langsung berlaku tanpa langkah approval",
+   "why_en": "",
+   "why_id": ""
+  },
+  {
+   "en": "A failure shows a pop-up with an error message",
+   "id": "Kegagalan menampilkan pop-up pesan error",
+   "why_en": "The pop-up is generic and only covers some error codes.",
+   "why_id": "Pop-up bersifat umum dan hanya untuk sebagian kode error."
+  },
+  {
+   "en": "Only admin staff can change the mapping behind the screen",
+   "id": "Hanya staff admin yang bisa mengubah mapping di balik layar",
+   "why_en": "The system has no role check; only the menu is restricted.",
+   "why_id": "sistem tidak mengecek role; hanya menu yang dibatasi."
+  }
+ ]
+}

@@ -1,0 +1,158 @@
+{
+ "schema_version": 1,
+ "diagram_type": "sequence",
+ "meta": {
+  "title": "ACM1.10 Audit Trail (ID)",
+  "output": "docs/archify/ACM1.10/ACM1.10.id.sequence.html",
+  "viewBox": [
+   1080,
+   620
+  ],
+  "animation": "trace",
+  "quality_profile": "showcase",
+  "column_fit": "spread"
+ },
+ "participants": [
+  {
+   "id": "staff",
+   "type": "external",
+   "label": "Staff",
+   "sublabel": "AC-ADMIN"
+  },
+  {
+   "id": "web",
+   "type": "frontend",
+   "label": "Audit Trail page",
+   "sublabel": "React"
+  },
+  {
+   "id": "api",
+   "type": "backend",
+   "label": "Audit controller",
+   "sublabel": "/acm/v1/audit"
+  },
+  {
+   "id": "helper",
+   "type": "backend",
+   "label": "Enquiry helper",
+   "sublabel": "filter + enrich"
+  },
+  {
+   "id": "db",
+   "type": "database",
+   "label": "Transaction table",
+   "sublabel": "user-role history"
+  }
+ ],
+ "segments": [
+  {
+   "from": 150,
+   "to": 250,
+   "label": "Buka + filter"
+  },
+  {
+   "from": 262,
+   "to": 450,
+   "label": "Pencarian"
+  },
+  {
+   "from": 462,
+   "to": 532,
+   "label": "Tampil + export"
+  }
+ ],
+ "messages": [
+  {
+   "from": "staff",
+   "to": "web",
+   "y": 170,
+   "label": "buka Audit Trail (menu)",
+   "variant": "emphasis"
+  },
+  {
+   "from": "staff",
+   "to": "web",
+   "y": 215,
+   "label": "Action, Staff, Feature, tanggal",
+   "variant": "default"
+  },
+  {
+   "from": "web",
+   "to": "api",
+   "y": 290,
+   "label": "POST /enquiry",
+   "variant": "emphasis"
+  },
+  {
+   "from": "api",
+   "to": "helper",
+   "y": 330,
+   "label": "validasi + ambil",
+   "variant": "default"
+  },
+  {
+   "from": "helper",
+   "to": "db",
+   "y": 370,
+   "label": "per tanggal dan user",
+   "variant": "default"
+  },
+  {
+   "from": "db",
+   "to": "helper",
+   "y": 410,
+   "label": "baris",
+   "variant": "return"
+  },
+  {
+   "from": "helper",
+   "to": "api",
+   "y": 445,
+   "label": "filter Action; Feature tak dipakai",
+   "variant": "dashed"
+  },
+  {
+   "from": "api",
+   "to": "web",
+   "y": 485,
+   "label": "daftar (200)",
+   "variant": "return"
+  },
+  {
+   "from": "web",
+   "to": "staff",
+   "y": 515,
+   "label": "tabel data",
+   "variant": "return"
+  }
+ ],
+ "cards": [
+  {
+   "dot": "emerald",
+   "title": "Sesuai flow",
+   "items": [
+    "Filter: Action, Staff, tanggal",
+    "Search menampilkan tabel",
+    "Cari staff butuh min. 3 karakter"
+   ]
+  },
+  {
+   "dot": "rose",
+   "title": "Gap",
+   "items": [
+    "Filter Feature tidak dipakai",
+    "Hanya perubahan user-role",
+    "Export CSV, bukan .xlsx"
+   ]
+  },
+  {
+   "dot": "orange",
+   "title": "Perlu verifikasi",
+   "items": [
+    "AC-ADMIN hanya di menu",
+    "Nilai roleId di database",
+    "Login AAD tidak ada di repo"
+   ]
+  }
+ ]
+}

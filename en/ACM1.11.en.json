@@ -1,0 +1,29 @@
+{
+ "story": "ACM1.11",
+ "flow_ref": "FSD v1.2 section 1.11 (page 22)",
+ "code_summary": "A Spring @Scheduled job (cron 0 30 20 * * *) reads view V_UIAM2_RESIGNED_STAFF, looks up the user in ACM_USER, copies then deletes ACM_USER_ROLE rows, and sets status INACTIVE.",
+ "note": "The daily soft delete job for resigned users is in spms_common_iz_api_app-main. Step 1 (view refresh at 19:00) is not in the repo. Outside the flow: ShedLock, error email to support, role log into DELETED_ACM_USER_ROLE_LOG, and a manual endpoint POST /acm/v1/scheduler/softDeleteAcmUserScheduler (WebSecurityConfig.java:63, endpoint there is no authentication or authorization in the repo for this endpoint: not in the filter allowlist, CSRF-exempt, permitAll; an API gateway in front of the app is not visible from the repo). Cron time zone follows the server (cannot verify from repo). The Functional Document v1.0 deck does not cover this story.",
+ "recommendation": "Confirm with the DB/UIAM team who refreshes the view at 19:00, and the server time zone of the job. Also secure the manual softDeleteAcmUserScheduler endpoint.",
+ "steps": [
+  {
+   "step": "Every day at 7 PM the view V_UIAM2_RESIGNED_STAFF is refreshed with the latest resigned staff.",
+   "detail": "The repo only reads the view V_UIAM2_RESIGNED_STAFF (@Entity @Immutable, @Table schema cascomizmgr). No job, SQL or script in the repo refreshes the view at 19:00 or defines its contents (grep in src/main/resources finds no V_UIAM2). Cannot verify from repo; probably done in the DB/UIAM, outside ACM code."
+  },
+  {
+   "step": "Every day at 8:30 PM the softDeleteAcmUsers job runs.",
+   "detail": "@Scheduled(cron = \"${acm.delete.user.job}\") and spms_common_iz_api_app-main/src/main/resources/application.yml:74 has acm.delete.user.job: 0 30 20 * * * (20:30 daily). Extras outside the flow: @SchedulerLock ShedLock (SoftDeleteAcmUserScheduler.java:26) so only 1 of 3 instances runs it, and an error email to support on failure (line 34). The time zone is not set in the cron; only Joda is set to Asia/Singapore (ACMApplication.java:22), so the scheduler follows the JVM time zone. 20:30 Singapore time is not proven by the repo (cannot verify from repo), so the step is graded Sebagian. application-local.yml disables the scheduler for local. application-local.yml disables schedulers for local."
+  },
+  {
+   "step": "The job fetches all resigned users from the view, then looks up the same user id in the ACM_USER table.",
+   "detail": "Native query joins cascomizmgr.V_UIAM2_RESIGNED_STAFF with ACM_USER (UR.USER_ID = AU.USER_ID) and returns ACM_USER IDs. The helper then calls userRepository.findById per id (SoftDeleteAcmUserServiceHelper.java:31-32) and processes found records (ifPresent, line 33). There is no status filter, so users already INACTIVE are fetched again every day (harmless since their roles are already empty). Side effect: updatedBy and updatedDate are overwritten every night (lines 36-37), and a role granted again to a user still in the view is removed again."
+  },
+  {
+   "step": "For each user found, its records in the ACM_USER_ROLE table are deleted.",
+   "detail": "userRoleService.deleteRolesByUser(user.getId()) (UserRoleService.java:715) calls userRoleRepository.deleteByUserId (UserRoleRepository.java:26), which deletes all user_role rows of the user. Extra outside the flow: before deletion each role is copied to DELETED_ACM_USER_ROLE_LOG (SoftDeleteAcmUserServiceHelper.java:38-47, entity DeletedAcmUserRoleLog.java:13). The whole process runs in one @Transactional (line 27). Note: the ROLE_ID column in the log holds the user_role row id (line 40), not the role code."
+  },
+  {
+   "step": "After the roles are deleted, the user status in ACM_USER is set to INACTIVE.",
+   "detail": "user.setStatus(UserStatus.INACTIVE) at line 35 (updatedBy SYSTEM line 36, updatedDate line 37) then userRepository.save(user) at line 49, after deleteRolesByUser at line 48. The user record is not removed from ACM_USER, only soft deleted, matching the flow text (update status)."
+  }
+ ]
+}

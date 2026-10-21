@@ -1,0 +1,57 @@
+{
+ "story": "ACM1.6",
+ "flow_ref": "FSD v1.2 section 1.6 (ACM_FSD _v1.2.pdf p.14-15) wins; ACM_Functional_Document_v1.0.pdf has no user-role grant section (only \"Assign Functions to the Role\", section 10.2, which is story ACM1.7); HCL_CAC.pptx is high level only",
+ "code_summary": "The grant flow works for adding roles: list of ACTIVE users, Map User Role form, supporter/approver selection (dropdown drops the requester), saving a PENDING UserRole and emailing the supporter (UserRoleController.java, UserRoleService.java, UserRoleMapping.js). Gaps: the AC-ADMIN check lives only in the UI menu, role removal is deleted at once without approval, the no-self-selection rule exists only in the dropdown, column sort was not found, and there is no per-application role restriction.",
+ "note": "Code baseline: zip snapshot, no git commit (git rev-parse points to the parent repo 90482ed, which is not a snapshot of this repo). FSD v1.2 wins; Functional Document v1.0 does not cover granting roles to users. The \"AC-admin\" role value per environment cannot be verified from the repo. The dev/local/sit profile does permitAll for every request (WebSecurityConfig.java:124), and uat/prd also permitAll \"/**\" (:167). Real email delivery cannot be verified. Supporter/approver approval belongs to stories ACM1.8 and ACM1.9 and is not claimed here. Dead code: validateAdminUserOrNot (UserRoleService.java:88) checks UserType.ADMIN but is called nowhere.",
+ "recommendation": "Claim partially: 5 steps Sesuai, 5 Sebagian, 1 Beda dari flow, 1 Tidak ada code. Fix before a full claim: add an AC-ADMIN check on the server, make role removal go through a PENDING request, block requester = supporter/approver on the server, add column sort, restrict roles per application.",
+ "steps": [
+  {
+   "step": "Staff logs in to the Staff Portal; system authenticates with AAD and lets the user into ACM if they hold an ACM role",
+   "detail": "The UI route guard only checks that the role response contains ACM application access (PrivateRouteConfig.js:26-27) and otherwise redirects to \"/\". The Staff Portal login/AAD flow is not in this repo. In the API, ACMAuthTokenFilter.java:42-49 validates the JWT only for a fixed endpoint list and the mapUserRole endpoint is not in that list."
+  },
+  {
+   "step": "Only staff with the AC-ADMIN role can access the User Role Mapping menu (BR-UR-001)",
+   "detail": "The \"User Role Mapping\" menu has accessRole \"AC-admin\" (Utility/constant.js:17) and LayoutACM.js:51 only shows modules the user has the role for. This is UI only. The /acm/v1/userRoleMapping/mapUserRole endpoint (UserRoleController.java:36) has no role check: WebSecurityConfig.java:167 does permitAll for \"/**\" and there is no @PreAuthorize, so a caller without AC-ADMIN can still submit. Per-environment role values cannot be verified from the repo."
+  },
+  {
+   "step": "Staff selects User Role Mapping; system loads a table of ACTIVE users (URAMS ID, Name, Department, Designation, Email, Mobile)",
+   "detail": "The ACM container dispatches getAcmUser when moduleType is URM (Containers/ACM/index.js:69) to viewAllUsers (UserController.java:51). With no search text, UserService.getUsers (UserService.java:123-124) uses findByStatusOrderByUserIdAsc(ACTIVE). UI table headers: URAMS ID, Name, Department, Designation, Email, Mobile, Action (Utility/constant.js:103-111)."
+  },
+  {
+   "step": "Staff can search and sort the URAMS ID and Name fields and export the searched/filtered data to Excel",
+   "detail": "A SearchBox exists (UsersList.js:27) and dispatches getAcmUser with the search value; the API searches via searchUser in UserService.java:231-235, which matches userId, fullName, designation, email and phoneNumber (wider than the two fields) and does not filter by ACTIVE status. Export exists via ExportToExcel (UsersList.js:38) on the currently displayed data, with more columns than the table. Column sort for URAMS ID/Name was not found in UsersList.js or around DataTable.js:89-94 (DataTable internals not fully verified)."
+  },
+  {
+   "step": "Staff clicks the edit button; system loads the Map User Role form for that user",
+   "detail": "The edit button (DataTable.js:515) calls handleAddUserRoleMapping (DataTable.js:89-94): dispatch getUserRoleDetails (POST viewRoleByUserId, UserRoleController.java:42), showDataTablePage to the form, then getApproverList and getSupporterList. Container index.js:348 renders UserRoleMapping (breadcrumb \"Map User Role\", UserRoleMapping.js:53)."
+  },
+  {
+   "step": "Staff assigns/unassigns roles in the form and picks the approver and supporter from dropdowns",
+   "detail": "The form has a role AutoSelect (UserRoleMapping.js:93-101, existing APPROVED roles preselected at :60-67), SelectApproverDropdown and SelectSupporterDropdown (:133-134), and remarks (:141). Yup validation requires approver and supporter (SechmaValidation.js:51-52). The dropdowns are filled from users holding AC-approve and AC-support (UserRoleService.java:518-550). The submit payload carries userId, roleIds, supportedBy, approvedBy, status PENDING, remarks (Containers/ACM/index.js:238-244)."
+  },
+  {
+   "step": "The staff assigning the role cannot select themselves as approver or supporter (BR-UR-003); supporter and approver must differ",
+   "detail": "The dropdown lists drop the user whose email equals the logged-in user (UserRoleService.java:530 supporter, :547 approver; userName comes from the token in UserRoleController.java:72-77). Supporter not equal to approver is checked on the server (validateSupporterIdWithApproverId, UserRoleService.java:97-103, called at :80) and in the UI (UserRoleMapping.js:135-140, index.js:245-248). But mapUserRoles never compares the requester (createdBy) with the supporter/approver, so the no-self-selection rule only exists through the dropdown filter and can be bypassed by a direct API call."
+  },
+  {
+   "step": "Submit: backend creates a PENDING request in the DB with ID, ROLE_ID, USER_ID, STATUS, CREATED_*, UPDATED_*, APPROVER_ID, SUPPORTER_ID, SUPPORTED_DATE, APPROVED_DATE, REMARKS",
+   "detail": "The saga POSTs to mapUserRole (Sagas/UserRoleMapping/UserRoleMappingPostSaga.js:19-23). mapUserRoles (UserRoleService.java:77-86) calls validateRoleStatus, which accepts only PENDING (:125-130), then mapToUserRole saves one UserRole per new role via userRoleRepository.save (:154-170 for a user with no roles, :189-205 for newly added roles) with status, supporter, approver, remarks and createdBy/createdDate. The ACM_USER_ROLE entity has STATUS, SUPPORTER_ID, APPROVER_ID, SUPPORTED_DATE, APPROVED_DATE, REMARKS columns (entities/UserRole.java:46-67). The action is tracked for audit via the createUserRoles pointcut (aop/CommonJoinPointConfig.java:45)."
+  },
+  {
+   "step": "Unassigning a role must also go through a request supported by the supporter and approved by the approver before taking effect (BR-UR-002)",
+   "detail": "In mapToUserRole, a role removed from the selection is deleted straight away with userRoleRepository.delete(userRole) (UserRoleService.java:208-216) and only logged as a DELETE transaction. There is no PENDING request and no supporter/approver step. Only added roles are PENDING. The FSD asks for assign and unassign to both go through approval."
+  },
+  {
+   "step": "On submit, an email is sent to the supporter (BR-UR-004)",
+   "detail": "mapUserRoles validates that the supporter email exists and matches a pattern (validateAndGetSupporterEmailID, UserRoleService.java:109-123, called at :81) then acmEmailServiceHelper.sendHTMLEmail sends to the supporter using template templates/email/acm/acm_supporter.json (:83); the template exists under src/main/resources. Actual delivery to a mailbox cannot be verified from the repo."
+  },
+  {
+   "step": "If retrieving or submitting data fails, staff sees a modal pop-up with an appropriate error message",
+   "detail": "The axios interceptor sets the apiError flag for 404/500 and apiError400 for 400 (axios.configuration.js:35-40) and ContentLayout.js:8-19 shows a modal from those flags. The message is generic rather than specific per failure (for example supporter equals approver on the server, ACMException), and other statuses such as 401/403 do not raise the modal."
+  },
+  {
+   "step": "Staff may only grant/revoke roles of users in their own application (BR-UR-005)",
+   "detail": "There is no per-application restriction. The UI fetches all roles (getRoleList with hard-coded uramsid \"XYZ001\", UserRoleMapping.js:70; the viewRoles endpoint returns roleService.getRoles() unfiltered, RoleController.java:42-48) and mapToUserRole (UserRoleService.java:144-217) never compares the role application with the requesting staff application."
+  }
+ ]
+}

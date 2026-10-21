@@ -1,0 +1,57 @@
+{
+ "story": "ACM1.4",
+ "flow_ref": "ACM_FSD _v1.2.pdf section 1.4 (pp. 10-11, basic course + BR-MR-001..004) as the main reference; ACM_Functional_Document_v1.0.pdf section 9 (Role Setup) as a supplement. HCL_CAC.pptx is high level only and has no Manage Roles steps.",
+ "code_summary": "Web: Containers/ACM/ManageRole (RoleTableView, RoleAddEdit) + Containers/ACM/index.js + Components/DataTable.js + Sagas/Roles. API: RoleController (/acm/v1/role/createRole, updateRole, viewRoles, deleteRole) -> RoleService -> RoleRepository (ACM_ROLE) and UserRoleRepository for the usage check.",
+ "note": "Role CRUD works as the FSD says for create, list, search, export, and delete with a user check. Gaps: the AC-ADMIN rule and 'edit description only' are enforced only in the UI, the server does not restrict them (WebSecurityConfig.java:167 permitAll, RoleService.java:75 saves roleName); the URL field is in the FSD but not in code; there is no user-driven column sort; error messages are generic. Possible bug: hardcoded editId 10 in DataTable.js:79. AAD login and the AC-ADMIN role value in the DB cannot be verified from repo.",
+ "recommendation": "Partial claim: Sesuai steps can be claimed; Sebagian steps (server-side authorization, description-only edit on the server, URL, column sort, error messages) need a fix or FSD confirmation before a full claim.",
+ "steps": [
+  {
+   "step": "Staff logs in to the Staff Portal via AAD and lands on ACM if the user has an ACM role",
+   "detail": "The route guard for /acm/manage-role (Navigation/RoutesConfig.js:136) only checks that the user has access to the ACM application (PrivateRouteConfig.js:27), not the AC-ADMIN role specifically; another ACM user who types the URL directly still passes the UI guard. The AAD login itself is not verified in this step (the token filter in spms_common_iz_api_app-main/src/main/java/sg/gov/ura/manage/parking/acm/security/jwt/ACMAuthTokenFilter.java:74 only loads authorities from the DB). AAD flow: cannot verify from repo."
+  },
+  {
+   "step": "Manage Roles menu appears only for AC-ADMIN",
+   "detail": "The Manage Roles menu is filtered in the UI: ACM_MODULES_LIST (Utility/constant.js:15) has accessRole 'AC-admin' and LayoutACM.js:51 uses a case-sensitive roleList.includes(); the FSD writes AC-ADMIN, and the actual role_id value in the DB cannot be verified from repo. There is no AC-ADMIN check on the server: RoleController (acm/controller/RoleController.java:23) has no role annotation, and WebSecurityConfig.java:167 uses permitAll for /** (uat/prd) and :124 (dev). So the rule is enforced only in the UI."
+  },
+  {
+   "step": "Load the role table (Application ID, Role ID, Role Name) of all roles except deleted",
+   "detail": "Flow: ACM/index.js:66 dispatches getRoleList -> Sagas/Roles/RolesSaga.js:13 POST acm/v1/role/viewRoles (Services/ServiceConfig.js:51) -> RoleController.java:42 -> RoleService.getRoles() findAll() at :98. Table columns in Utility/constant.js:76 (Application ID, Role ID, Role Name, Action). Delete is a hard delete (RoleService.java:126 removeByRoleId), so deleted roles indeed do not appear."
+  },
+  {
+   "step": "Staff can search Role ID and Role Name",
+   "detail": "SearchBox 'Role Name, Role ID' (Containers/ACM/ManageRole/RoleTableView.js:50) -> handleSearch dispatches getRoleList({searchText}) (:34-35) -> RoleController.java:45-46 -> RoleService.getRolesByIdAndName :152 uses findByRoleIdContainingOrRoleNameContaining (RoleRepository.java:19), a contains search."
+  },
+  {
+   "step": "Staff can sort Role ID and Role Name",
+   "detail": "Only a default sort by roleName exists (sortObject(roleData,'roleName') in index.js:291, Packages/Common.js:50). There is no clickable sort control for the Role ID or Role Name columns; no sort handler was found in Components/DataTable.js."
+  },
+  {
+   "step": "Staff can export searched/filtered roles to Excel",
+   "detail": "ExportToExcel (Components/ExportToExcel.js:3) builds the CSV 'Roles.csv' from props.roleData, i.e. the current list/search result (all pages, not only the visible page), columns APPLICATION_ID, ROLE_ID, ROLE_NAME, DESCRIPTION (RoleTableView.js:19-24). The format is CSV, not .xlsx; it opens in Excel."
+  },
+  {
+   "step": "Add New Role opens a form: application, role name, role ID, URL, description (optional)",
+   "detail": "The Add New Role button is in RoleTableView.js:61-63. The form has Application (RoleAddEdit.js:24), Role Name max 100 (:25), Role ID max 10 (:26), optional Description max 200 (:27). The URL field mentioned in the FSD exists neither in the form nor in RoleCreateRequest.java; Functional Document 9.2 does not list a URL either. The FSD wins, so Sebagian."
+  },
+  {
+   "step": "Submit creates the role in the DB",
+   "detail": "Flow: ACM/index.js:203 postRole -> Sagas/Roles/RolesPostSaga.js:13,16 (POST acm/v1/role/createRole) -> RoleController.java:30-33 (@Valid, 201) -> RoleService.createRole :61-70: rejects if the roleId already exists (ACMEntityAlreadyExistsException, -> 400 via CustomControllerAdvice.java:32-34), loads the Application, roleRepository.save (:67). After success the list is reloaded (RolesPostSaga.js:21-22). Note: length limits (name 100, ID 10, description 200) exist only in the UI (RoleAddEdit.js:25-27; roleValidation SechmaValidation.js:25-30); the server only has @NotBlank and @Size(max=256) on description (RoleCreateRequest.java:14-21). The duplicate check is by global roleId (RoleService.java:62), stricter than the application+role unique constraint in Role.java:17-18."
+  },
+  {
+   "step": "Edit allows only the description to be changed",
+   "detail": "UI: when editing, Application, Role Name, Role ID are disabled (isDisable={!acmData.isNew}, RoleAddEdit.js:24-26), only Description can change. The server does not restrict this: updateRole accepts and saves a new roleName (RoleService.java:75) and description (:76), so BR-MR-002 is enforced only in the UI. Separate bug: Components/DataTable.js:79 uses editId = index + (currentPage-1)*10 with a hardcoded 10, although PageSize can be changed by the user (:43,:67); if the page size is not 10 and the page is > 1, the edit form may open the wrong role (read from roleData[editId], ACM/index.js:130). Impact needs manual verification."
+  },
+  {
+   "step": "Staff clicks delete and confirms in a modal pop-up",
+   "detail": "The delete icon calls handleRemove (DataTable.js:402) which opens ConfirmModal (:173-176, rendered at :243); after confirmation handleDelete dispatches deleteRole({roleId}) (:185-190) -> Sagas/Roles/DeleteRolesSaga.js:13 POST acm/v1/role/deleteRole -> RoleController.java:57-60."
+  },
+  {
+   "step": "Role is deleted only if not assigned to any user, otherwise an error pop-up asks to disassociate",
+   "detail": "RoleService.deleteRole: findByRole(userRole) at :123; if empty, removeByRoleId (:125-126, code ACM200); if still used by users, it is not deleted and ACM500 is returned with the user list (:132-138). RoleTableView.js:26-27 opens a 'Delete Failed' modal with responseMsg (:40-46). Note: the HTTP status stays 200, the error is distinguished by responseCode."
+  },
+  {
+   "step": "On retrieve/submit failure, staff sees a modal with an appropriate error message",
+   "detail": "The axios interceptor turns on the global 'Something went wrong' modal (Components/ContentLayout.js:17-22) on 404/500 (axios.configuration.js:43-44) or 400 (:46-47). The message is generic: for 400 the text is 'unable to retrieve the record' (ContentLayout.js:13-14) even when the failure happened on submit/duplicate Role ID; the specific server message (e.g. 'Role already exists') is not shown. A reducer ERROR_HANDLE_ROLE exists (Reducers/Roles/RolesReducer.js:31) but no role component that displays it was found."
+  }
+ ]
+}

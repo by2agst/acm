@@ -1,0 +1,223 @@
+{
+ "schema_version": 1,
+ "diagram_type": "sequence",
+ "meta": {
+  "title": "ACM1.1 Manage Application",
+  "output": "ACM1.1.sequence.html",
+  "locale": "en",
+  "viewBox": [
+   1080,
+   620
+  ],
+  "column_fit": "spread",
+  "animation": "trace",
+  "quality_profile": "showcase",
+  "views": [
+   {
+    "id": "list",
+    "label": "List and search",
+    "focus": [
+     "staff",
+     "web",
+     "api",
+     "db"
+    ],
+    "note": "View all applications from the database."
+   },
+   {
+    "id": "create",
+    "label": "Create",
+    "focus": [
+     "web",
+     "api",
+     "db"
+    ],
+    "note": "Duplicate Application ID is refused."
+   },
+   {
+    "id": "edit-delete",
+    "label": "Edit and delete",
+    "focus": [
+     "web",
+     "api",
+     "db"
+    ],
+    "note": "Edit also changes URL; delete cascades."
+   }
+  ]
+ },
+ "participants": [
+  {
+   "id": "staff",
+   "type": "external",
+   "label": "Staff",
+   "sublabel": "AC-ADMIN"
+  },
+  {
+   "id": "web",
+   "type": "frontend",
+   "label": "Web App",
+   "sublabel": "React / Redux saga"
+  },
+  {
+   "id": "api",
+   "type": "backend",
+   "label": "ACM API",
+   "sublabel": "ApplicationService"
+  },
+  {
+   "id": "db",
+   "type": "database",
+   "label": "ACM_APPLICATION",
+   "sublabel": "Azure SQL"
+  }
+ ],
+ "segments": [
+  {
+   "from": 150,
+   "to": 300,
+   "label": "List"
+  },
+  {
+   "from": 308,
+   "to": 420,
+   "label": "Create"
+  },
+  {
+   "from": 428,
+   "to": 535,
+   "label": "Edit + delete"
+  }
+ ],
+ "messages": [
+  {
+   "id": "m1",
+   "from": "staff",
+   "to": "web",
+   "y": 160,
+   "label": "open Manage Application",
+   "variant": "default"
+  },
+  {
+   "id": "m2",
+   "from": "web",
+   "to": "api",
+   "y": 196,
+   "label": "POST viewAllApplications",
+   "variant": "emphasis"
+  },
+  {
+   "id": "m3",
+   "from": "api",
+   "to": "db",
+   "y": 232,
+   "label": "findAll / contains search",
+   "variant": "default"
+  },
+  {
+   "id": "m4",
+   "from": "api",
+   "to": "web",
+   "y": 268,
+   "label": "list (ID, Name)",
+   "variant": "return"
+  },
+  {
+   "id": "m5",
+   "from": "web",
+   "to": "api",
+   "y": 320,
+   "label": "POST createApplication",
+   "variant": "emphasis"
+  },
+  {
+   "id": "m6",
+   "from": "api",
+   "to": "db",
+   "y": 356,
+   "label": "save, duplicate ID -> 400",
+   "variant": "emphasis"
+  },
+  {
+   "id": "m7",
+   "from": "api",
+   "to": "web",
+   "y": 392,
+   "label": "created / generic error modal",
+   "variant": "return"
+  },
+  {
+   "id": "m8",
+   "from": "web",
+   "to": "api",
+   "y": 444,
+   "label": "updateApplication: name+desc+URL",
+   "variant": "dashed"
+  },
+  {
+   "id": "m9",
+   "from": "web",
+   "to": "api",
+   "y": 480,
+   "label": "deleteApplication (after modal)",
+   "variant": "emphasis"
+  },
+  {
+   "id": "m10",
+   "from": "api",
+   "to": "db",
+   "y": 516,
+   "label": "remove + JPA cascade",
+   "variant": "emphasis"
+  }
+ ],
+ "activations": [
+  {
+   "participant": "web",
+   "from": 156,
+   "to": 522,
+   "type": "frontend"
+  },
+  {
+   "participant": "api",
+   "from": 190,
+   "to": 522,
+   "type": "backend"
+  },
+  {
+   "participant": "db",
+   "from": 226,
+   "to": 524,
+   "type": "database"
+  }
+ ],
+ "cards": [
+  {
+   "dot": "emerald",
+   "title": "Matches the flow",
+   "items": [
+    "List, search and CSV export work",
+    "Duplicate ID refused on create",
+    "Delete confirmed in a modal, cascades to modules/roles/functions"
+   ]
+  },
+  {
+   "dot": "rose",
+   "title": "Gap vs flow",
+   "items": [
+    "Edit also changes URL (FSD: description only)",
+    "No user-driven column sort",
+    "Error modal is generic, no reason shown"
+   ]
+  },
+  {
+   "dot": "orange",
+   "title": "To verify",
+   "items": [
+    "AC-ADMIN checked only in the UI menu",
+    "Staff Portal login is outside the repos",
+    "DB foreign keys not visible in repo"
+   ]
+  }
+ ]
+}

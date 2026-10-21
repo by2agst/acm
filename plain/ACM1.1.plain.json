@@ -1,0 +1,71 @@
+{
+ "story": "ACM1.1",
+ "steps": [
+  {
+   "en": "Staff sign in and reach ACM if they have ACM access.",
+   "id": "Staff login dan masuk ke ACM kalau punya akses ACM.",
+   "why_en": "Portal login is not part of this system; the application screens are not checked behind the screen.",
+   "why_id": "Login portal bukan bagian sistem ini; layar application tidak dicek di balik layar."
+  },
+  {
+   "en": "The menu only appears for the admin role.",
+   "id": "Menu hanya muncul untuk role admin.",
+   "why_en": "Only the menu is limited; nothing behind the screen checks the admin role.",
+   "why_id": "Hanya menu yang dibatasi; tidak ada pengecekan role admin di balik layar."
+  },
+  {
+   "en": "The list shows every current application by ID and name.",
+   "id": "Daftar menampilkan semua application dengan ID dan nama.",
+   "why_en": "",
+   "why_id": ""
+  },
+  {
+   "en": "Staff can search and export the list.",
+   "id": "Staff bisa mencari dan mengekspor daftar.",
+   "why_en": "There is no way for staff to sort the columns.",
+   "why_id": "Staff tidak bisa mengurutkan kolom."
+  },
+  {
+   "en": "Add New Application opens a form with the required fields.",
+   "id": "Add New Application membuka form dengan field yang diminta.",
+   "why_en": "",
+   "why_id": ""
+  },
+  {
+   "en": "The form checks field length and URL format.",
+   "id": "Form mengecek panjang field dan format URL.",
+   "why_en": "Checks run in the screen only; the URL rule is loose and not checked behind the screen.",
+   "why_id": "Pengecekan hanya di layar; aturan URL longgar dan tidak dicek di balik layar."
+  },
+  {
+   "en": "Submitting saves the new application; duplicate IDs are refused.",
+   "id": "Submit menyimpan application baru; ID kembar ditolak.",
+   "why_en": "",
+   "why_id": ""
+  },
+  {
+   "en": "Staff can change the description and the URL, not only the description.",
+   "id": "Staff bisa ubah description dan URL, bukan hanya description.",
+   "why_en": "The flow allows description only; the system also lets staff change the URL.",
+   "why_id": "Flow hanya mengizinkan description; sistem juga mengizinkan ubah URL."
+  },
+  {
+   "en": "Deleting asks for confirmation first, then removes the application.",
+   "id": "Hapus meminta konfirmasi dulu, lalu menghapus application.",
+   "why_en": "",
+   "why_id": ""
+  },
+  {
+   "en": "Deleting an application removes its modules, roles and functions too.",
+   "id": "Hapus application ikut menghapus module, role, dan function-nya.",
+   "why_en": "",
+   "why_id": ""
+  },
+  {
+   "en": "A problem shows a pop-up saying something went wrong.",
+   "id": "Masalah menampilkan pop-up bahwa terjadi kesalahan.",
+   "why_en": "The pop-up is generic and does not show the actual reason, such as a duplicate ID.",
+   "why_id": "Pop-up bersifat umum dan tidak menampilkan alasan sebenarnya, misalnya ID kembar."
+  }
+ ]
+}

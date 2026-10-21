@@ -1,0 +1,77 @@
+{
+ "story": "ACM1.6",
+ "steps": [
+  {
+   "en": "Staff sign in and reach ACM if they have ACM access.",
+   "id": "Staff login dan masuk ke ACM kalau punya akses ACM.",
+   "why_en": "Portal login is outside this code; the mapping action itself is not tied to a signed-in user behind the scenes.",
+   "why_id": "Login portal di luar code ini; aksi mapping sendiri tidak terikat ke user yang login di balik layar."
+  },
+  {
+   "en": "Only admins see the User Role Mapping menu.",
+   "id": "Hanya admin yang melihat menu User Role Mapping.",
+   "why_en": "The check exists only in the screen; the system behind the screen does not verify the admin role.",
+   "why_id": "Pengecekan hanya di layar; sistem di balik layar tidak memverifikasi role admin."
+  },
+  {
+   "en": "The screen lists all active users with their details.",
+   "id": "Layar menampilkan semua user aktif beserta datanya.",
+   "why_en": "",
+   "why_id": ""
+  },
+  {
+   "en": "Staff can search and export the user list; sorting is unconfirmed.",
+   "id": "Staff bisa search dan export daftar user; sort belum terbukti.",
+   "why_en": "Search matches more fields than ID and name, and column sorting was not found.",
+   "why_id": "Search mencocokkan lebih banyak field dari ID dan nama, dan sort kolom tidak ditemukan."
+  },
+  {
+   "en": "Clicking edit opens the role form for that user.",
+   "id": "Klik edit membuka form role untuk user itu.",
+   "why_en": "",
+   "why_id": ""
+  },
+  {
+   "en": "The form lets staff choose roles, an approver and a supporter.",
+   "id": "Form memungkinkan staff memilih role, approver, dan supporter.",
+   "why_en": "",
+   "why_id": ""
+  },
+  {
+   "en": "Approver and supporter must differ and not be the requester.",
+   "id": "Approver dan supporter harus berbeda dan bukan pengaju.",
+   "why_en": "The requester is only filtered out of the dropdowns; the system behind the screen does not block self-selection.",
+   "why_id": "Pengaju hanya disaring dari dropdown; sistem di balik layar tidak memblokir pilih diri sendiri."
+  },
+  {
+   "en": "Submitting creates a pending request for the supporter and approver.",
+   "id": "Submit membuat request pending untuk supporter dan approver.",
+   "why_en": "",
+   "why_id": ""
+  },
+  {
+   "en": "Removing a role takes effect immediately without approval.",
+   "id": "Pencabutan role langsung berlaku tanpa persetujuan.",
+   "why_en": "Only added roles wait for approval; removed roles are deleted at once.",
+   "why_id": "Hanya role yang ditambah menunggu persetujuan; role yang dicabut langsung dihapus."
+  },
+  {
+   "en": "The supporter gets an email when a request is submitted.",
+   "id": "Supporter dapat email saat request diajukan.",
+   "why_en": "",
+   "why_id": ""
+  },
+  {
+   "en": "A popup appears when a request fails, with a general message.",
+   "id": "Popup muncul saat request gagal, dengan pesan umum.",
+   "why_en": "The message is generic and some failure statuses show no popup.",
+   "why_id": "Pesannya umum dan beberapa status gagal tidak memunculkan popup."
+  },
+  {
+   "en": "Staff can only manage roles for their own application.",
+   "id": "Staff hanya bisa mengatur role untuk aplikasinya sendiri.",
+   "why_en": "No such restriction exists; all roles are offered to every admin.",
+   "why_id": "Pembatasan itu tidak ada; semua role ditawarkan ke setiap admin."
+  }
+ ]
+}
